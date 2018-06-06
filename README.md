@@ -1,3 +1,21 @@
+# Moot
+
+This is the home of Moot, a CFP and event management system. To learn more, please see the [slides for the launch announcement](https://github.com/bitemyapp/presentations/blob/master/moot/moot.pdf).
+
+## Helping out
+
+If you're interested in learning Haskell or would like to help, _please_ contact me! We're still looking for:
+
+- Backend and frontend developers
+- Designers
+- UI/UX pros
+- People willing to help with tutoring and teaching
+
+I'll (Chris) be doing the heavy lifting but I'd like this application to be an opportunity for people to kick around a real Haskell application. To that end, I'm offering tutoring to folks interested in helping out. Don't be afraid to help out in one capacity (e.g. UI/UX) while asking for tutoring in another.
+
+The easiest way to contact me is to send a message to the email address [on my GitHub profile](https://github.com/bitemyapp).
+
+
 ## Database Setup
 
 After installing Postgres, run:
