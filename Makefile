@@ -43,14 +43,19 @@ reset-database: destroy-create-db migration fixtures
 
 reset-data: truncate-tables fixtures
 
-create-db-user:
-	sudo -u postgres createuser moot -W --superuser
-
-destroy-create-db:
+drop-databases:
 	-sudo -u postgres dropdb moot_dev
 	-sudo -u postgres dropdb moot_test
+
+create-db-user: drop-databases
+	-sudo -u postgres dropuser moot
+	bash ./scripts/create-db-users.sh
+
+destroy-create-db: drop-databases
 	sudo -u postgres createdb -O moot moot_dev
 	sudo -u postgres createdb -O moot moot_test
+
+recreate-db: create-db-user destroy-create-db
 
 migration: build
 	stack exec -- migration
