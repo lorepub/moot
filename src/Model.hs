@@ -47,6 +47,11 @@ Admin sql=admins
 Editor sql=editors
   account AccountId
   user UserId
+
+Conference sql=conferences
+  owner OwnerId
+  name Text
+  description Text
 |]
 
 -- role subsumption?
@@ -122,7 +127,7 @@ runMigrations = runMigration migrateAll
 
 devConn :: ConnectionString
 devConn =
-  "dbname=moot_dev host=localhost user=postgres password=password port=5432"
+  "dbname=moot_dev host=localhost user=moot password=moot port=5432"
 
 runDevDB :: DB a -> IO a
 runDevDB a =
