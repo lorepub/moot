@@ -4,6 +4,8 @@ module Model.Fixtures where
 
 import Import
 
+import Text.Email.QuasiQuotation
+
 data UserFixtures =
   UserFixtures { allUsersF :: [Entity User] }
   deriving (Eq, Show)
@@ -13,17 +15,19 @@ data Fixtures =
            }
   deriving (Eq, Show)
 
-chrisEmail, chrisPassword :: Text
-chrisEmail = "chris@lol.com"
+chrisEmail :: Email
+chrisEmail = [email|chris@lol.com|]
+chrisPassword :: Text
 chrisPassword = "chrisPass"
 
-alexeyEmail, alexeyPassword :: Text
-alexeyEmail = "alexey@lol.com"
+alexeyEmail :: Email
+alexeyEmail = [email|alexey@lol.com|]
+alexeyPassword :: Text
 alexeyPassword = "alexeyPass"
 
-makeAccount :: Text -> Text -> DB (Entity User)
-makeAccount email pass = do
-  userEnt <- createUser email pass
+makeAccount :: Email -> Text -> DB (Entity User)
+makeAccount email' pass = do
+  userEnt <- createUser email' pass
   return userEnt
 
 makeAccounts :: DB [Entity User]

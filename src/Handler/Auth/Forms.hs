@@ -4,8 +4,21 @@ import Import
 
 import Helpers.Forms
 
-loginForm :: Form (Text, Text)
+loginForm :: Form (Email, Text)
 loginForm =
   renderDivs $
-  (,) <$> areq textField (named "email" (placeheld "Email")) Nothing
+  (,) <$> areq emailField' (named "email" (placeheld "Email")) Nothing
       <*> areq passwordField (named "password" (placeheld "Password")) Nothing
+
+
+data SignupForm = SignupForm {
+    signupEmail :: Email
+  , signupPassword :: Text
+  }
+
+signupForm :: Form SignupForm
+signupForm =
+  renderDivs $
+    SignupForm
+      <$> areq emailField' (named "email" (placeheld "Email: ")) Nothing
+      <*> areq passwordField (named "password" (placeheld "Password: ")) Nothing

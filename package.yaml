@@ -44,6 +44,7 @@ dependencies:
 - containers
 - data-default
 - directory >=1.1 && <1.4
+- email-validate
 - errors
 - esqueleto >= 2.5 && < 2.7
 - fast-logger >=2.2 && <2.5

@@ -51,21 +51,6 @@ postLoginR = do
               redirect HomeR
     _ -> renderLogin widget
 
-
-data SignupForm = SignupForm {
-    signupEmail :: Text
-  , signupUsername :: Text
-  , signupPassword :: Text
-  }
-
-signupForm :: Form SignupForm
-signupForm =
-  renderDivs $
-    SignupForm
-      <$> areq textField (named "email" (placeheld "Email: ")) Nothing
-      <*> areq textField (named "username" (placeheld "Username: ")) Nothing
-      <*> areq passwordField (named "password" (placeheld "Password: ")) Nothing
-
 renderSignup :: Widget -> Handler Html
 renderSignup widget = do
   baseLayout Nothing $ do
