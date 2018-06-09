@@ -52,6 +52,8 @@ Conference sql=conferences
   owner OwnerId
   name Text
   description Text
+
+AbstractSubmissions sql=abstract_submissions
 |]
 
 -- role subsumption?
