@@ -6,6 +6,7 @@ import Import.NoFoundation
 
 import Control.Monad.Logger (LogSource)
 import Database.Persist.Sql (runSqlPool)
+import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Jasmine         (minifym)
 import Yesod.Core.Types     (Logger)
 import Yesod.Default.Util   (addStaticContentExternal)
@@ -37,6 +38,26 @@ instance Yesod App where
     makeSessionBackend _ = Just <$> defaultClientSessionBackend
         120    -- timeout in minutes
         "config/client_session_key.aes"
+
+    defaultLayout w = do
+        p <- widgetToPageContent w
+        msgs <- getMessages
+        let pt = pageTitle p
+            title = case renderHtml pt of
+                      "" -> "Moot"
+                      t -> "Moot - " <> t
+        withUrlRenderer [hamlet|
+            $newline never
+            $doctype 5
+            <html>
+                <head>
+                    <title>#{title}
+                    ^{pageHead p}
+                <body>
+                    $forall (status, msg) <- msgs
+                        <p class="message #{status}">#{msg}
+                    ^{pageBody p}
+            |]
 
     yesodMiddleware :: ToTypedContent res => Handler res -> Handler res
     yesodMiddleware = defaultYesodMiddleware

@@ -69,3 +69,12 @@ getHomeR =
         <a .button>
           Yo
 |]
+
+getAboutR :: Handler Html
+getAboutR =
+  baseLayout Nothing $ do
+    setTitle "About"
+    [whamlet|
+<article .grid-container>
+  <h1>Aboot!
+|]
