@@ -1,44 +1,39 @@
 -- | Running your app inside GHCi.
 --
--- This option provides significantly faster code reload compared to
--- @yesod devel@. However, you do not get automatic code reload
--- (which may be a benefit, depending on your perspective). To use this:
+-- To start up GHCi for usage with Yesod, first make sure you are in dev mode:
 --
--- 1. Start up GHCi
+-- > cabal configure -fdev
 --
--- $ stack ghci moot:lib --no-load --work-dir .stack-work-devel
+-- Note that @yesod devel@ automatically sets the dev flag.
+-- Now launch the repl:
 --
--- 2. Load this module
+-- > cabal repl --ghc-options="-O0 -fobject-code"
 --
--- > :l app/DevelMain.hs
+-- To start your app, run:
 --
--- 3. Run @update@
---
--- > DevelMain.update
---
--- 4. Your app should now be running, you can connect at http://localhost:3000
---
--- 5. Make changes to your code
---
--- 6. After saving your changes, reload by running:
---
--- > :r
+-- > :l DevelMain
 -- > DevelMain.update
 --
 -- You can also call @DevelMain.shutdown@ to stop the app
 --
+-- You will need to add the foreign-store package to your .cabal file.
+-- It is very light-weight.
+--
+-- If you don't use cabal repl, you will need
+-- to run the following in GHCi or to add it to
+-- your .ghci file.
+--
+-- :set -DDEVELOPMENT
+--
 -- There is more information about this approach,
 -- on the wiki: https://github.com/yesodweb/yesod/wiki/ghci
---
--- WARNING: GHCi does not notice changes made to your template files.
--- If you change a template, you'll need to either exit GHCi and reload,
--- or manually @touch@ another Haskell module.
 
 module DevelMain where
 
 import Prelude
 import Application (getApplicationRepl, shutdownApp)
 
+import Control.Exception (finally)
 import Control.Monad ((>=>))
 import Control.Concurrent
 import Data.IORef
@@ -78,12 +73,11 @@ update = do
           -> IO ThreadId
     start done = do
         (port, site, app) <- getApplicationRepl
-        forkFinally
-            (runSettings (setPort port defaultSettings) app)
-            -- Note that this implies concurrency
-            -- between shutdownApp and the next app that is starting.
-            -- Normally this should be fine
-            (\_ -> putMVar done () >> shutdownApp site)
+        forkIO (finally (runSettings (setPort port defaultSettings) app)
+                        -- Note that this implies concurrency
+                        -- between shutdownApp and the next app that is starting.
+                        -- Normally this should be fine
+                        (putMVar done () >> shutdownApp site))
 
 -- | kill the server
 shutdown :: IO ()

@@ -6,8 +6,11 @@ stack = $(stack_yaml) stack
 build:
 	$(stack) build $(package)
 
+build-fast:
+	$(stack) build -j4 --fast --no-terminal
+
 build-dirty:
-	$(stack) build --ghc-options=-fforce-recomp $(package)
+	$(stack) build --force-dirty $(package)
 
 build-profile:
 	$(stack) --work-dir .stack-work-profiling --profile build
@@ -19,7 +22,7 @@ install:
 	$(stack) install
 
 ghci:
-	$(stack) ghci $(package):lib
+	$(stack) ghci $(package):lib --ghci-options='-j4 +RTS -A128m'
 
 test:
 	$(stack) test $(package)
@@ -36,5 +39,26 @@ ghcid:
 dev-deps:
 	stack install ghcid
 
-.PHONY : build build-dirty run install ghci test test-ghci ghcid dev-deps
+reset-database: destroy-create-db migration fixtures
 
+reset-data: truncate-tables fixtures
+
+create-db-user:
+	sudo -u postgres createuser moot -W --superuser
+
+destroy-create-db:
+	-sudo -u postgres dropdb moot_dev
+	-sudo -u postgres dropdb moot_test
+	sudo -u postgres createdb -O moot moot_dev
+	sudo -u postgres createdb -O moot moot_test
+
+migration: build
+	stack exec -- migration
+
+fixtures: build
+	stack exec -- fixtures
+
+truncate-tables: build
+	stack exec -- truncate
+
+.PHONY : build build-dirty run install ghci test test-ghci ghcid dev-deps

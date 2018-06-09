@@ -21,3 +21,6 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 *.cabal
+config/client_session_key.aes
+static/css/app.css
+node_modules/
