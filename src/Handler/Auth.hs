@@ -26,7 +26,7 @@ getLoginR :: Handler Html
 getLoginR = do
   redirectIfLoggedIn HomeR
   (loginFormWidget, _) <- generateFormPost loginForm
-  renderLogin loginFormWidget
+  renderLogin loginFormWidget []
 
 postLoginR :: Handler Html
 postLoginR = do
@@ -37,7 +37,7 @@ postLoginR = do
       maybeUP <- runDB (getUserPassword email)
       case maybeUP of
         Nothing ->
-          notFound
+          renderLogin widget ["Email not yet registered"]
         (Just
          ( Entity dbUserKey _
          , Entity _ Password{..})) -> do
@@ -45,11 +45,11 @@ postLoginR = do
                 passwordMatches passwordHash password
           case success of
             False ->
-              notAuthenticated
+              renderLogin widget ["Password did not match"]
             True -> do
               setUserSession dbUserKey True
               redirect HomeR
-    _ -> renderLogin widget
+    _ -> renderLogin widget ["Form failed validation"]
 
 renderSignup :: Widget -> Handler Html
 renderSignup widget = do
