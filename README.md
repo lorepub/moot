@@ -37,10 +37,26 @@ If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.
 
 ## Development
 
+### Installing dependencies
+
+This should install the `yesod` binary for the development server and also install the dependencies for the gulp build:
+
+```
+make deps
+```
+
+### Starting the web server for work
+
+Start the gulp watch with:
+
+```
+make frontend-watch
+```
+
 Start a development server with:
 
 ```
-stack exec -- yesod devel
+make backend-watch
 ```
 
 As your code changes, your site will be automatically recompiled and redeployed to localhost.
