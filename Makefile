@@ -15,6 +15,15 @@ build-dirty:
 build-profile:
 	$(stack) --work-dir .stack-work-profiling --profile build
 
+frontend-deps:
+	cd frontend && npm install
+
+frontend-build:
+	cd frontend && npm run-script build
+
+frontend-watch:
+	cd frontend && npm start
+
 run:
 	$(stack) build --fast && $(stack) exec -- $(package)
 

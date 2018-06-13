@@ -1,12 +1,18 @@
 var gulp = require('gulp');
 var $    = require('gulp-load-plugins')();
+var exec = require('child_process').exec;
 
 var sassPaths = [
   'node_modules/foundation-sites/scss',
   'node_modules/motion-ui/src'
 ];
 
+gulp.task('bump-staticfiles', function() {
+  return exec('touch ../src/Settings/StaticFiles.hs', function (err, stdout, stderr) {});
+});
+
 gulp.task('sass', function() {
+  gulp.start('bump-staticfiles');
   return gulp.src('scss/app.scss')
     .pipe($.sass({
       includePaths: sassPaths,
@@ -16,9 +22,16 @@ gulp.task('sass', function() {
     .pipe($.autoprefixer({
       browsers: ['last 2 versions', 'ie >= 9']
     }))
-    .pipe(gulp.dest('../static/css'));
+    .pipe(
+      gulp.dest('../static/css')
+    );
 });
 
-gulp.task('default', ['sass'], function() {
-  gulp.watch(['scss/**/*.scss'], ['sass']);
+var watchTargets = [
+  'sass',
+  'bump-staticfiles'
+];
+
+gulp.task('default', watchTargets, function() {
+  gulp.watch(['scss/**/*.scss'], watchTargets);
 });
