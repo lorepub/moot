@@ -53,7 +53,15 @@ Conference sql=conferences
   name Text
   description Text
 
-AbstractSubmissions sql=abstract_submissions
+AbstractSubmission sql=abstract_submissions
+  title Text
+  description Text
+  author UserId
+
+EditedAbstract sql=edited_abstracts
+  abstract AbstractSubmissionId
+  editedDescription Text
+
 |]
 
 -- role subsumption?
