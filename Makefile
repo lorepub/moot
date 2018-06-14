@@ -15,6 +15,23 @@ build-dirty:
 build-profile:
 	$(stack) --work-dir .stack-work-profiling --profile build
 
+backend-watch:
+	$(stack) exec -- yesod devel
+
+frontend-build:
+	cd frontend && npm run-script build
+
+frontend-watch:
+	cd frontend && npm start
+
+backend-deps:
+	$(stack) install yesod-bin
+
+frontend-deps:
+	cd frontend && npm install
+
+deps: backend-deps frontend-deps
+
 run:
 	$(stack) build --fast && $(stack) exec -- $(package)
 
