@@ -15,6 +15,23 @@ build-dirty:
 build-profile:
 	$(stack) --work-dir .stack-work-profiling --profile build
 
+backend-watch:
+	$(stack) exec -- yesod devel
+
+frontend-build:
+	cd frontend && npm run-script build
+
+frontend-watch:
+	cd frontend && npm start
+
+backend-deps:
+	$(stack) install yesod-bin
+
+frontend-deps:
+	cd frontend && npm install
+
+deps: backend-deps frontend-deps
+
 run:
 	$(stack) build --fast && $(stack) exec -- $(package)
 
@@ -43,14 +60,19 @@ reset-database: destroy-create-db migration fixtures
 
 reset-data: truncate-tables fixtures
 
-create-db-user:
-	sudo -u postgres createuser moot -W --superuser
-
-destroy-create-db:
+drop-databases:
 	-sudo -u postgres dropdb moot_dev
 	-sudo -u postgres dropdb moot_test
+
+create-db-user: drop-databases
+	-sudo -u postgres dropuser moot
+	bash ./scripts/create-db-users.sh
+
+destroy-create-db: drop-databases
 	sudo -u postgres createdb -O moot moot_dev
 	sudo -u postgres createdb -O moot moot_test
+
+recreate-db: create-db-user destroy-create-db
 
 migration: build
 	stack exec -- migration

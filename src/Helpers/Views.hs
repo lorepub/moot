@@ -5,21 +5,24 @@ import Import
 baseLayout :: Maybe (Entity User)
            -> WidgetFor App ()
            -> HandlerFor App Html
-baseLayout _ content =
+baseLayout _ content = do
+  nav <- renderNav
   defaultLayout $ do
     addScriptRemote "https://code.jquery.com/jquery-3.3.1.slim.min.js"
     addScriptRemote "https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"
     addScript (StaticR js_app_js)
     addStylesheet (StaticR css_app_css)
     [whamlet|
-^{renderNav}
+^{nav}
 <br>
 ^{content}
 ^{renderFooter}
 |]
 
-renderNav :: Widget
-renderNav = [whamlet|
+renderNav :: Handler Widget
+renderNav = do
+  rightNav <- renderRightNav
+  return [whamlet|
 <div .top-bar>
   <div .top-bar-left>
     <ul .dropdown .menu data-dropdown-menu="" data-e="ja9juo-e" role="menubar">
@@ -43,14 +46,26 @@ renderNav = [whamlet|
       <li role="menuitem">
         <a href="#">
           Two
+  ^{rightNav}
+|]
+
+renderRightNav :: Handler Widget
+renderRightNav = do
+  maybeUser <- getUser
+  return [whamlet|
   <div .top-bar-right>
     <ul .menu>
-      <li role="menuitem">
-        <a href="@{SignupR}">
-          Signup
-      <li role="menuitem">
-        <a href="@{LoginR}">
-          Login
+      $maybe _ <- maybeUser
+        <li role="menuitem">
+          <a href="@{SignoutR}">
+            Signout
+      $nothing
+        <li role="menuitem">
+          <a href="@{SignupR}">
+            Signup
+        <li role="menuitem">
+          <a href="@{LoginR}">
+            Login
 |]
 
 renderFooter :: Widget
@@ -78,6 +93,6 @@ renderFooter = [whamlet|
       <p>
         Made with ♥ in Austin, TX and around the world
       <div>
-        This application is free software, &nbsp;
+        This application is free software, 
         <a style="text-decoration: underline;">know your rights!
 |]

@@ -9,7 +9,8 @@ import AppType
 mkYesodData "App" [parseRoutes|
 /static StaticR Static appStatic
 
-/ HomeR GET
+/           HomeR    GET
+/about      AboutR   GET
 
 -- Auth
 /login      LoginR   GET POST

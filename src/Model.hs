@@ -8,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+
 module Model
   ( module Model
   , module Export
@@ -22,11 +23,9 @@ import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
 import Model.BCrypt as Export
 import Model.Types as Export
 
---     t.index ["mailing_list_mode"], name: "mailing_list_enabled"
-
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users
-  email Text sqltype=varchar(100)
+  email Email sqltype=varchar(100)
   createdAt UTCTime
   UniqueUserEmail email
   deriving Eq Show
@@ -48,6 +47,21 @@ Admin sql=admins
 Editor sql=editors
   account AccountId
   user UserId
+
+Conference sql=conferences
+  owner OwnerId
+  name Text
+  description Text
+
+AbstractSubmission sql=abstract_submissions
+  title Text
+  description Text
+  author UserId
+
+EditedAbstract sql=edited_abstracts
+  abstract AbstractSubmissionId
+  editedDescription Text
+
 |]
 
 -- role subsumption?
@@ -65,7 +79,7 @@ selectFirst query = do
     (x : _) -> return (Just x)
     _ -> return Nothing
 
-getUserPassword :: Text
+getUserPassword :: Email
                 -> DB (Maybe
                        ( Entity User
                        , Entity Password))
@@ -86,7 +100,7 @@ getUserPassword email = do
           return $ Just (user, password)
 
 
-getUserByEmail :: Text -> DB (Maybe (Entity User))
+getUserByEmail :: Email -> DB (Maybe (Entity User))
 getUserByEmail email =
   getUserBy UserEmail email
 
@@ -100,14 +114,14 @@ getUserBy field value =
   where_ (user ^. field ==. val value)
   return user
 
-defaultCreateUser :: Text
+defaultCreateUser :: Email
                   -> IO User
 defaultCreateUser userEmail = do
   t <- getCurrentTime
   let userCreatedAt = t
   return $ User{..}
 
-createUser :: Text -> Text -> DB (Entity User)
+createUser :: Email -> Text -> DB (Entity User)
 createUser email pass = do
   newUser <- liftIO $ defaultCreateUser email
   userId <- insert newUser
@@ -123,7 +137,7 @@ runMigrations = runMigration migrateAll
 
 devConn :: ConnectionString
 devConn =
-  "dbname=moot_dev host=localhost user=postgres password=password port=5432"
+  "dbname=moot_dev host=localhost user=moot password=moot port=5432"
 
 runDevDB :: DB a -> IO a
 runDevDB a =
