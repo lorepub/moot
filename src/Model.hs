@@ -62,7 +62,42 @@ EditedAbstract sql=edited_abstracts
   abstract AbstractSubmissionId
   editedDescription Text
 
+CustomForm sql=custom_forms
+  user UserId
+
+FormInput sql=form_inputs
+  form CustomFormId
+  name Text
+  fieldType Text
+
+CustomFormFilled sql=custom_forms_filled
+  parent CustomFormId
+  respondee UserId
+
+CustomFormInputFilled sql=custom_form_inputs_filled
+  form CustomFormFilledId
+  input FormInputId
 |]
+
+-- data BlindLevel =
+--     OwnerOnly
+--   | AdminOnly
+--   | EditorOnly
+
+-- data Blinded l a =
+--   Blinded a
+
+-- type BlindEmail = Blinded 'AdminOnly EmailAddress
+
+
+-- CustomFormInputFilledTextInput
+-- CustomFormInputFilledTextboxInput
+-- CustomFormInputFilledDropdownInput
+
+-- data FieldType =
+--     TextInput
+--   | TextboxInput
+--   | Dropdown (NonEmpty Text)
 
 -- role subsumption?
 -- getRolesForUser :: UserId -> DB (Maybe [Roles])

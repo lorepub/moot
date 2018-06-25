@@ -5,7 +5,7 @@ import Import
 import Helpers.Views
 
 getHomeR :: Handler Html
-getHomeR =
+getHomeR = do
   baseLayout Nothing $ do
     setTitle "Home"
     [whamlet|

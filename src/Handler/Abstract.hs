@@ -89,7 +89,10 @@ abstractTypes = []
 
 -- Form builder
 
--- CFP collected, blind edit, review, rate.
+-- CFP collected, blind edit, blind review/rate, schedule.
+
+-- Non-MVP follow-up questions for accepted speakers
+-- Dietary preferences, kids/childcare
 
 -- Skip dropdown toggle
 -- Segment, form for a particular group
