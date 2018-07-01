@@ -15,16 +15,6 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import AppType
 import Routes
 
-data MenuItem = MenuItem
-    { menuItemLabel :: Text
-    , menuItemRoute :: Route App
-    , menuItemAccessCallback :: Bool
-    }
-
-data MenuTypes
-    = NavbarLeft MenuItem
-    | NavbarRight MenuItem
-
 type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
 
 instance Yesod App where
@@ -59,7 +49,9 @@ instance Yesod App where
                     ^{pageBody p}
             |]
 
-    yesodMiddleware :: ToTypedContent res => Handler res -> Handler res
+    yesodMiddleware :: ToTypedContent res
+                    => Handler res
+                    -> Handler res
     yesodMiddleware = defaultYesodMiddleware
 
     isAuthorized
@@ -102,8 +94,8 @@ instance YesodPersist App where
     type YesodPersistBackend App = SqlBackend
     runDB :: SqlPersistT Handler a -> Handler a
     runDB action = do
-        master <- getYesod
-        runSqlPool action $ appConnPool master
+        app <- getYesod
+        runSqlPool action $ appConnPool app
 
 instance YesodPersistRunner App where
     getDBRunner :: Handler (DBRunner App, Handler ())

@@ -23,6 +23,14 @@ import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
 import Model.BCrypt as Export
 import Model.Types as Export
 
+-- (PrimaryKey, User)
+-- data User = User Email UTCTime
+-- (PrimaryKey, User)
+-- User -> DB PrimaryKey
+
+-- Int64
+-- Primary email
+
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users
   email Email sqltype=varchar(100)
@@ -65,7 +73,7 @@ EditedAbstract sql=edited_abstracts
 CustomForm sql=custom_forms
   user UserId
 
-FormInput sql=form_inputs
+CustomFormInput sql=custom_form_inputs
   form CustomFormId
   name Text
   fieldType Text
@@ -76,7 +84,7 @@ CustomFormFilled sql=custom_forms_filled
 
 CustomFormInputFilled sql=custom_form_inputs_filled
   form CustomFormFilledId
-  input FormInputId
+  input CustomFormInputId
 |]
 
 -- data BlindLevel =
@@ -117,7 +125,9 @@ selectFirst query = do
 getUserPassword :: Email
                 -> DB (Maybe
                        ( Entity User
-                       , Entity Password))
+                       , Entity Password
+                       )
+                      )
 getUserPassword email = do
   maybeUser <- getUserByEmail email
   case maybeUser of

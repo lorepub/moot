@@ -10,7 +10,6 @@ mkYesodData "App" [parseRoutes|
 /static StaticR Static appStatic
 
 /           HomeR    GET
-/about      AboutR   GET
 
 -- Auth
 /login      LoginR   GET POST
