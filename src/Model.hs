@@ -85,6 +85,11 @@ CustomFormFilled sql=custom_forms_filled
 CustomFormInputFilled sql=custom_form_inputs_filled
   form CustomFormFilledId
   input CustomFormInputId
+
+Abstract sql=abstracts
+  title Text
+  authorAbstract Text
+  editedAbstract Text Maybe
 |]
 
 -- data BlindLevel =

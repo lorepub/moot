@@ -89,6 +89,7 @@ abstractTypes = []
 
 -- Form builder
 
+-- [MVP: minimal version of the pipeline]
 -- CFP collected, blind edit, blind review/rate, schedule.
 
 -- Non-MVP follow-up questions for accepted speakers
