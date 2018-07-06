@@ -18,13 +18,34 @@ The easiest way to contact me is to send a message to the email address [on my G
 
 ## Database Setup
 
+### Ubuntu 16.04 / 18.04
+
 After installing Postgres, run:
 
 ```
-createuser moot --superuser
-createdb moot
-createdb moot_test
+sudo -u postgres createuser moot --superuser
+sudo -u postgres createdb moot_dev
+sudo -u postgres createdb moot_test
+echo "ALTER USER moot WITH PASSWORD 'moot'" | sudo -u postgres psql
 ```
+
+### macOS
+
+If using Postgres.app: https://postgresapp.com/documentation/cli-tools.html
+Homebrew: https://www.codementor.io/engineerapart/getting-started-with-postgresql-on-mac-osx-are8jcopb
+
+Either way, these commands should be in your path and you shouldn't need to sudo as a separate user specially made for Postgres in the typical macOS PostgreSQL server install:
+
+```
+createuser moot --superuser
+createdb moot_dev
+createdb moot_test
+echo "ALTER USER moot WITH PASSWORD 'moot'" | psql
+```
+
+### Windows
+
+???
 
 ## Haskell Setup
 
