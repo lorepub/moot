@@ -21,7 +21,7 @@ The easiest way to contact me is to send a message to the email address [on my G
 After installing Postgres, run:
 
 ```
-createuser moot --password moot --superuser
+createuser moot --superuser
 createdb moot
 createdb moot_test
 ```
