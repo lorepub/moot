@@ -17,6 +17,7 @@ module Model
 import ClassyPrelude.Yesod hiding ((==.), hash, on, selectFirst)
 
 import Control.Monad.Logger hiding (LoggingT, runLoggingT)
+import Data.Time.Clock
 import Database.Esqueleto hiding (selectFirst)
 import Database.Esqueleto.Internal.Sql
 import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
@@ -86,98 +87,19 @@ CustomFormInputFilled sql=custom_form_inputs_filled
   form CustomFormFilledId
   input CustomFormInputId
 
+AbstractType sql=abstract_types
+  conference ConferenceId
+  name Text
+  duration TalkDuration
+  deriving Show
+
 Abstract sql=abstracts
+  user UserId
   title Text
   authorAbstract Text
   editedAbstract Text Maybe
+  deriving Show
 |]
-
--- data BlindLevel =
---     OwnerOnly
---   | AdminOnly
---   | EditorOnly
-
--- data Blinded l a =
---   Blinded a
-
--- type BlindEmail = Blinded 'AdminOnly EmailAddress
-
-
--- CustomFormInputFilledTextInput
--- CustomFormInputFilledTextboxInput
--- CustomFormInputFilledDropdownInput
-
--- data FieldType =
---     TextInput
---   | TextboxInput
---   | Dropdown (NonEmpty Text)
-
--- role subsumption?
--- getRolesForUser :: UserId -> DB (Maybe [Roles])
--- getRolesForUser userKey = undefined
-
-selectFirst :: ( SqlSelect a r
-               , MonadIO m
-               )
-            => SqlQuery a
-            -> SqlReadT m (Maybe r)
-selectFirst query = do
-  res <- select query
-  case res of
-    (x : _) -> return (Just x)
-    _ -> return Nothing
-
-getUserPassword :: Email
-                -> DB (Maybe
-                       ( Entity User
-                       , Entity Password
-                       )
-                      )
-getUserPassword email = do
-  maybeUser <- getUserByEmail email
-  case maybeUser of
-    Nothing -> return Nothing
-    (Just user) -> do
-      maybePassword <-
-        selectFirst $
-          from $ \password -> do
-            where_ (password ^. PasswordUser
-                      ==. val (entityKey user))
-            return password
-      case maybePassword of
-        Nothing -> return Nothing
-        (Just password) ->
-          return $ Just (user, password)
-
-
-getUserByEmail :: Email -> DB (Maybe (Entity User))
-getUserByEmail email =
-  getUserBy UserEmail email
-
-getUserBy :: (PersistField a)
-          => EntityField User a
-          -> a
-          -> DB (Maybe (Entity User))
-getUserBy field value =
-  selectFirst $
-  from $ \user -> do
-  where_ (user ^. field ==. val value)
-  return user
-
-defaultCreateUser :: Email
-                  -> IO User
-defaultCreateUser userEmail = do
-  t <- getCurrentTime
-  let userCreatedAt = t
-  return $ User{..}
-
-createUser :: Email -> Text -> DB (Entity User)
-createUser email pass = do
-  newUser <- liftIO $ defaultCreateUser email
-  userId <- insert newUser
-  hash <- liftIO $ hashPassword pass
-  _ <- insert (Password hash userId)
-  return (Entity userId newUser)
 
 dumpMigration :: DB ()
 dumpMigration = printMigration migrateAll

@@ -4,6 +4,7 @@ module Model.Fixtures where
 
 import Import
 
+import Model.API
 import Text.Email.QuasiQuotation
 
 data UserFixtures =

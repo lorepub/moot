@@ -16,5 +16,9 @@ mkYesodData "App" [parseRoutes|
 /signup     SignupR  GET POST
 /signout    SignoutR GET
 
+-- Admin
+/organizer/signup OrganizerSignupR GET POST
+/conference/#Int64/abstract-types ConferenceAbstractTypesR GET POST
+
 /cfp/submit SubmitAbstractR GET POST
 |]

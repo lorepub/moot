@@ -22,6 +22,48 @@ requireUser = do
     Nothing -> redirect HomeR -- LoginR
     (Just user) -> return user
 
+requireOwner :: Handler (Entity User, Entity Owner)
+requireOwner = do
+  user <- requireUser
+  maybeOwner <- runDB $ getOwnerForUser (entityKey user)
+  case maybeOwner of
+    Nothing -> permissionDenied "You are not an owner"
+    (Just owner) ->
+      return (user, owner)
+
+requireOwnerForEntity ::
+     (DBVal a)
+  => EntityField a (Key Owner)
+  -> (SqlExpr (Entity a) -> SqlQuery b)
+  -> Handler ( Entity User
+             , Entity Owner
+             , Entity a
+             )
+requireOwnerForEntity f w = do
+  (user, owner) <- requireOwner
+  maybeRec <- runDB $ getRecByField' f w (entityKey owner)
+  case maybeRec of
+    Nothing -> permissionDenied "You are not an owner for this resource"
+    (Just rec') ->
+      return (user, owner, rec')
+
+requireOwnerForConference conferenceId =
+    requireOwnerForEntity
+       ConferenceOwner
+       (\conf -> where_ (conf ^. ConferenceId ==. val (toSqlKey conferenceId)))
+
+-- data AdminOrStronger =
+--     AOSA Admin
+--   | AOSO Owner
+--   deriving Show
+
+-- data Permissions =
+--   CanEditAbstractTypes AdminOrStronger
+--   deriving Show
+
+-- type family Permitted a where
+--   Permitted 'CanEditAbstractTypes = Admin
+
 getLoginR :: Handler Html
 getLoginR = do
   redirectIfLoggedIn HomeR

@@ -5,6 +5,8 @@ module Model.Types where
 import ClassyPrelude.Yesod
 -- import Data.Bifunctor
 import Data.Fixed
+import Data.Time.Clock
+import Database.Persist.Sql
 import Text.Email.Validate
 import Text.Shakespeare.Text
 
@@ -14,6 +16,15 @@ type DBM m a =
   (ControlIO m, MonadThrow m, Monad m) => SqlPersistT m a
 
 type DB a = forall m. DBM m a
+
+type DBAll val typ backend =
+  ( PersistField typ
+  , PersistUniqueRead backend
+  , PersistQueryRead backend
+  , PersistEntity val
+  , BackendCompatible SqlBackend backend
+  , BackendCompatible SqlBackend (PersistEntityBackend val)
+  )
 
 type DBVal val =
   ( PersistEntity val
@@ -33,8 +44,6 @@ data E10
 instance HasResolution E10 where
     resolution _ = 10000000000
 
-type Hotness = Fixed E10
-
 type Email = EmailAddress
 
 instance PersistField Email where
@@ -46,3 +55,30 @@ instance PersistField Email where
   fromPersistValue v =
       Left
     $ [st|Got invalid PersistValue for Email, was: #{tshow v}|]
+
+newtype PasswordText =
+  PasswordText Text
+
+makeNominalDiffTime :: Int64 -> NominalDiffTime
+makeNominalDiffTime i = secondsToNominalDiffTime (MkFixed (fromIntegral i))
+
+unpackNominalDiffTime :: NominalDiffTime -> Int64
+unpackNominalDiffTime ndt =
+  case nominalDiffTimeToSeconds ndt of
+    (MkFixed i) -> fromIntegral i
+
+instance PersistField NominalDiffTime where
+  toPersistValue = PersistInt64 . unpackNominalDiffTime
+  fromPersistValue (PersistInt64 i) =
+    Right $ makeNominalDiffTime i
+  fromPersistValue pv =
+      Left
+    $ "Tried to deserialize nominaldifftime, expected PersistInt64, got: "
+      <> tshow pv
+
+instance PersistFieldSql NominalDiffTime where
+  sqlType _ = SqlString
+
+newtype TalkDuration =
+  TalkDuration NominalDiffTime
+  deriving (Eq, Show, PersistField, PersistFieldSql)

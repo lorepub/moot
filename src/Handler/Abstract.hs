@@ -116,21 +116,29 @@ abstractTypes = []
 
 -- Conference cloning
 
-abstractForm :: Form (Text, Text, Text, Text, Text, Text)
+data SubmittedAbstract =
+  SubmittedAbstract {
+    submittedAbstractEmail :: Email
+  , submittedAbstractPassword :: Text
+  , submittedAbstractTitle :: Text
+  , submittedAbstractBody :: Text
+  , submittedAbstractType :: Text
+  } deriving Show
+
+abstractForm :: Form SubmittedAbstract
 abstractForm =
   renderDivs $
-  (,,,,,) <$> areq textField (named "first-name"
-                              (placeheld "First name:")) Nothing
-          <*> areq textField (named "last-name"
-                              (placeheld "Last name:")) Nothing
-          <*> areq textField (named "preferred-name"
-                              (placeheld "Preferred name:")) Nothing
-          <*> areq textField (named "email-address"
-                              (placeheld "Email address:")) Nothing
-          <*> areq textField (named "twitter-handle"
-                              (placeheld "Twitter handle:")) Nothing
-          <*> areq textField (named "proposal-title"
-                              (placeheld "Title:")) Nothing
+      SubmittedAbstract
+  <$> areq emailField' (named "email"
+                       (placeheld "Email:")) Nothing
+  <*> areq passwordField (named "password"
+                          (placeheld "Password: ")) Nothing
+  <*> areq textField (named "abstract-title"
+                      (placeheld "Abstract title:")) Nothing
+  <*> areq textField (named "abstract-body"
+                      (placeheld "Abstract proposal:")) Nothing
+  <*> areq textField (named "abstract-type"
+                      (placeheld "Abstract type:")) Nothing
 
 getSubmitAbstractR :: Handler Html
 getSubmitAbstractR = do
