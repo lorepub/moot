@@ -86,7 +86,8 @@ newtype Minutes =
 renderMinutes :: Minutes -> Text
 renderMinutes (Minutes min) =
   case quotRem min 60 of
-    (0, 0) -> undefined
+    -- Well this is plainly bonkers
+    (0, 0) -> [st|0 hours, 0 minutes|]
     (0, minutes) -> [st|#{tshow minutes} minutes|]
     (hours, 0) -> [st|#{tshow hours} hours|]
     (hours, minutes) ->
