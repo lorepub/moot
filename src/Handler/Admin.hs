@@ -40,7 +40,7 @@ postAdminR userId = undefined
 data AbstractTypeForm =
   AbstractTypeForm {
     abstractTypeFormName :: Text
-  , abstractTypeFormDuration :: Text
+  , abstractTypeFormDuration :: Word64
   } deriving Show
 
 abstractTypeForm :: Form AbstractTypeForm
@@ -49,29 +49,70 @@ abstractTypeForm =
         AbstractTypeForm
     <$> areq textField (named "talk-type-name"
                         (placeheld "Talk type name: ")) Nothing
-    <*> areq textField (named "talk-duration"
-                        (placeheld "Talk type duration: ")) Nothing
+    <*> areq intField (named "talk-duration"
+                        (placeheld "Talk type duration in minutes: ")) Nothing
 
-getConferenceAbstractTypesR :: Int64 -> Handler Html
-getConferenceAbstractTypesR conferenceId = do
-  (user, owner, conference) <-
-    requireOwnerForConference conferenceId
-  abstractTypes <-
-    runDB $
-      getRecsByField
-        AbstractTypeConference
-        (toSqlKey conferenceId)
+renderConferenceAbstractTypes ::
+     Int64
+  -> [Entity AbstractType]
+  -> Widget
+  -> Handler Html
+renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget = do
   baseLayout Nothing $ do
     setTitle "Conference Abstract Types"
     [whamlet|
+<article .grid-container>
+  <div .medium-3 .cell>
+    <h1>Add a new abstract type
+    <div>
+      <form method="POST" action=@{ConferenceAbstractTypesR conferenceId}>
+        ^{abstractTypeFormWidget}
+        <input .button type="submit" value="Create">
+  <div .medium-6 .cell>
     <h1>Abstract types
-    <ul>
-      $forall abstractType <- abstractTypes
-        <li>#{tshow abstractType}
+    $if null abstractTypes
+      <h5>No talk types are defined yet!
+    $else
+      <ul>
+        $forall abstractType <- abstractTypes
+          <li>#{renderAbstractType (entityVal abstractType)}
     |]
+
+getAbstractTypes :: ConferenceId -> DB [Entity AbstractType]
+getAbstractTypes conferenceId =
+  getRecsByField AbstractTypeConference conferenceId
+
+getConferenceAbstractTypesR :: Int64 -> Handler Html
+getConferenceAbstractTypesR conferenceId = do
+  (user, owner, account, conference) <-
+    requireOwnerForConference (toSqlKey conferenceId)
+  abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
+  (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
+  renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget
 
 postConferenceAbstractTypesR :: Int64 -> Handler Html
 postConferenceAbstractTypesR conferenceId = do
-  (user, owner, conference) <-
-    requireOwnerForConference conferenceId
-  return [whamlet||]
+  (user, owner, account, conference) <-
+    requireOwnerForConference (toSqlKey conferenceId)
+  ((result, abstractTypeFormWidget), _) <- runFormPost abstractTypeForm
+  case result of
+    FormSuccess (AbstractTypeForm name duration) -> do
+      abstractTypes <- runDB $ do
+        void $ insertEntity $ AbstractType (entityKey conference) name (makeTalkDuration duration)
+        getAbstractTypes (entityKey conference)
+      renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget
+    _ -> error "bluhhh"
+
+getConferencesR :: Handler Html
+getConferencesR = do
+  baseLayout Nothing $ do
+    setTitle "My conferences"
+    [whamlet|
+|]
+
+getConferenceDashboardR :: Int64 -> Handler Html
+getConferenceDashboardR conferenceId = do
+  baseLayout Nothing $ do
+    setTitle "Dashboard"
+    [whamlet|
+|]

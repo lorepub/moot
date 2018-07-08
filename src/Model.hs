@@ -44,61 +44,72 @@ Password sql=passwords
   user UserId
 
 Account sql=accounts
+  owner OwnerId
+  deriving Eq Show
 
 Owner sql=owners
-  account AccountId
   user UserId
+  deriving Eq Show
 
 Admin sql=admins
   account AccountId
   user UserId
+  deriving Eq Show
 
 Editor sql=editors
   account AccountId
   user UserId
+  deriving Eq Show
 
 Conference sql=conferences
-  owner OwnerId
+  account AccountId
   name Text
   description Text
+  deriving Eq Show
 
 AbstractSubmission sql=abstract_submissions
   title Text
   description Text
   author UserId
+  deriving Eq Show
 
 EditedAbstract sql=edited_abstracts
   abstract AbstractSubmissionId
   editedDescription Text
+  deriving Show
 
 CustomForm sql=custom_forms
   user UserId
+  deriving Eq Show
 
 CustomFormInput sql=custom_form_inputs
   form CustomFormId
   name Text
   fieldType Text
+  deriving Eq Show
 
 CustomFormFilled sql=custom_forms_filled
   parent CustomFormId
   respondee UserId
+  deriving Eq Show
 
 CustomFormInputFilled sql=custom_form_inputs_filled
   form CustomFormFilledId
   input CustomFormInputId
+  deriving Eq Show
 
 AbstractType sql=abstract_types
   conference ConferenceId
   name Text
   duration TalkDuration
-  deriving Show
+  deriving Eq Show
 
 Abstract sql=abstracts
   user UserId
   title Text
   authorAbstract Text
   editedAbstract Text Maybe
-  deriving Show
+  deriving Eq Show
 |]
 
 dumpMigration :: DB ()

@@ -74,6 +74,9 @@ destroy-create-db: drop-databases
 
 recreate-db: create-db-user destroy-create-db
 
+psql:
+	sudo -u postgres psql moot_dev
+
 migration: build
 	stack exec -- migration
 

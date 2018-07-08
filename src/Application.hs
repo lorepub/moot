@@ -31,10 +31,13 @@ import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
                                              setOnException, setPort, getPort)
-import Network.Wai.Middleware.RequestLogger (Destination (Logger),
+import Network.Wai.Middleware.RequestLogger (Destination (..),
                                              IPAddrSource (..),
-                                             OutputFormat (..), destination,
-                                             mkRequestLogger, outputFormat)
+                                             OutputFormat (..),
+                                             destination,
+                                             mkRequestLogger,
+                                             defaultRequestLoggerSettings,
+                                             outputFormat)
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
@@ -98,7 +101,8 @@ makeApplication foundation = do
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
-    mkRequestLogger def
+  mkRequestLogger
+      defaultRequestLoggerSettings
         { outputFormat =
             if appDetailedRequestLogging $ appSettings foundation
                 then Detailed True

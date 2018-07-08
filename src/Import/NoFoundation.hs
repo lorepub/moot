@@ -26,6 +26,7 @@ import Network.HTTP.Types as Import
 import Control.Error.Safe    as Import (justZ)
 import Database.Esqueleto    as Import hiding (selectFirst)
 import Model                 as Import
+import Model.Render          as Import
 import Model.API             as Import
 import Settings              as Import
 import Settings.StaticFiles  as Import

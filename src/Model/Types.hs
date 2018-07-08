@@ -59,26 +59,49 @@ instance PersistField Email where
 newtype PasswordText =
   PasswordText Text
 
-makeNominalDiffTime :: Int64 -> NominalDiffTime
-makeNominalDiffTime i = secondsToNominalDiffTime (MkFixed (fromIntegral i))
+-- makeNominalDiffTime :: Int64 -> NominalDiffTime
+-- makeNominalDiffTime i = secondsToNominalDiffTime (fromIntegral i)
 
-unpackNominalDiffTime :: NominalDiffTime -> Int64
-unpackNominalDiffTime ndt =
-  case nominalDiffTimeToSeconds ndt of
-    (MkFixed i) -> fromIntegral i
+-- unpackNominalDiffTime :: NominalDiffTime -> Int64
+-- unpackNominalDiffTime ndt =
+--   case nominalDiffTimeToSeconds ndt of
+--     (MkFixed i) -> (div (fromIntegral i) (floor $ 10 ^ 12))
 
-instance PersistField NominalDiffTime where
-  toPersistValue = PersistInt64 . unpackNominalDiffTime
-  fromPersistValue (PersistInt64 i) =
-    Right $ makeNominalDiffTime i
-  fromPersistValue pv =
-      Left
-    $ "Tried to deserialize nominaldifftime, expected PersistInt64, got: "
-      <> tshow pv
+-- instance PersistField NominalDiffTime where
+--   toPersistValue = PersistInt64 . unpackNominalDiffTime
+--   fromPersistValue (PersistInt64 i) =
+--     Right $ makeNominalDiffTime i
+--   fromPersistValue pv =
+--       Left
+--     $ "Tried to deserialize nominaldifftime, expected PersistInt64, got: "
+--       <> tshow pv
 
-instance PersistFieldSql NominalDiffTime where
-  sqlType _ = SqlString
+-- instance PersistFieldSql NominalDiffTime where
+--   sqlType _ = SqlInt64
+
+newtype Minutes =
+  Minutes { unMinutes :: Word64 }
+  deriving (Eq, Show, PersistField, PersistFieldSql)
+
+renderMinutes :: Minutes -> Text
+renderMinutes (Minutes min) =
+  case quotRem min 60 of
+    (0, 0) -> undefined
+    (0, minutes) -> [st|#{tshow minutes} minutes|]
+    (hours, 0) -> [st|#{tshow hours} hours|]
+    (hours, minutes) ->
+      [st|#{tshow hours} hours, #{tshow minutes} minutes|]
 
 newtype TalkDuration =
-  TalkDuration NominalDiffTime
+  TalkDuration { unTalkDuration :: Minutes }
   deriving (Eq, Show, PersistField, PersistFieldSql)
+
+renderTalkDuration :: TalkDuration -> Text
+renderTalkDuration (TalkDuration minutes) =
+  renderMinutes minutes
+
+makeTalkDuration :: Word64 -> TalkDuration
+makeTalkDuration = TalkDuration . Minutes
+
+unpackTalkDuration :: TalkDuration -> Word64
+unpackTalkDuration = unMinutes . unTalkDuration

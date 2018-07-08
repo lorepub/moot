@@ -47,10 +47,27 @@ requireOwnerForEntity f w = do
     (Just rec') ->
       return (user, owner, rec')
 
-requireOwnerForConference conferenceId =
-    requireOwnerForEntity
-       ConferenceOwner
-       (\conf -> where_ (conf ^. ConferenceId ==. val (toSqlKey conferenceId)))
+requireOwnerForConference ::
+     ConferenceId
+  -> Handler ( Entity User
+             , Entity Owner
+             , Entity Account
+             , Entity Conference
+             )
+requireOwnerForConference conferenceId = do
+  (user, owner) <- requireOwner
+  maybeConfAcc <- runDB $ f owner
+  case maybeConfAcc of
+    Nothing -> permissionDenied "You are not the owner for this conference"
+    (Just (acc, conf)) ->
+      return (user, owner, acc, conf)
+  where f owner =
+          selectFirst $
+          from $
+          \ (conference `InnerJoin` account) -> do
+            on (conference ^. ConferenceAccount ==. account ^. AccountId)
+            where_ (account ^. AccountOwner ==. val (entityKey owner))
+            return (account, conference)
 
 -- data AdminOrStronger =
 --     AOSA Admin

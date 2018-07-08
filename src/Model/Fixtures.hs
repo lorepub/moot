@@ -4,15 +4,29 @@ module Model.Fixtures where
 
 import Import
 
-import Model.API
 import Text.Email.QuasiQuotation
 
 data UserFixtures =
   UserFixtures { allUsersF :: [Entity User] }
   deriving (Eq, Show)
 
+data OwnerFixtures =
+  OwnerFixtures { allOwnersF :: [Entity Owner] }
+  deriving (Eq, Show)
+
+data AccountFixtures =
+  AccountFixtures { allAccountsF :: [Entity Account] }
+  deriving (Eq, Show)
+
+data ConferenceFixtures =
+  ConferenceFixtures { allConferencesF :: [Entity Conference] }
+  deriving (Eq, Show)
+
 data Fixtures =
-  Fixtures { userF     :: UserFixtures
+  Fixtures { userF :: UserFixtures
+           , ownerF :: OwnerFixtures
+           , accountF :: AccountFixtures
+           , conferenceF :: ConferenceFixtures
            }
   deriving (Eq, Show)
 
@@ -26,13 +40,13 @@ alexeyEmail = [email|alexey@lol.com|]
 alexeyPassword :: Text
 alexeyPassword = "alexeyPass"
 
-makeAccount :: Email -> Text -> DB (Entity User)
+makeAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
 makeAccount email' pass = do
-  userEnt <- createUser email' pass
-  return userEnt
+  createAccount email' pass
 
-makeAccounts :: DB [Entity User]
+makeAccounts :: DB ([Entity User], [Entity Owner], [Entity Account])
 makeAccounts =
+  unzip3 <$>
   sequenceA [ makeAccount chrisEmail chrisPassword
             , makeAccount alexeyEmail alexeyPassword ]
 
@@ -40,16 +54,27 @@ makeAccounts =
 unsafeIdx :: (MonoFoldable c) => c -> Integer -> Element c
 unsafeIdx xs n
   | n < 0     = error "negative index"
-  | otherwise = foldr (\x r k -> case k of
-                                   0 -> x
-                                   _ -> r (k-1)) (error ("index too large: " ++ show n))  xs n
+  | otherwise =
+    foldr (\x r k -> case k of
+                       0 -> x
+                       _ -> r (k-1)) (error ("index too large: " ++ show n))  xs n
+
+makeConference :: AccountId -> Text -> DB (Entity Conference)
+makeConference accountId confName =
+  createConferenceForAccount accountId confName "The coolest code conf"
 
 insertFixtures :: DB Fixtures
 insertFixtures = do
-  allUsersF <- makeAccounts
+  (allUsersF, allOwnersF, allAccountsF) <- makeAccounts
   -- let chris = unsafeIdx allUsersF 0
   --     alexey = unsafeIdx allUsersF 1
+  let chrisAccount = unsafeIdx allAccountsF 0
+  allConferencesF <-
+    traverse (makeConference (entityKey chrisAccount)) ["ChrisConf"]
   let userF = UserFixtures {..}
+      ownerF = OwnerFixtures {..}
+      accountF = AccountFixtures {..}
+      conferenceF = ConferenceFixtures {..}
   return Fixtures {..}
 
 

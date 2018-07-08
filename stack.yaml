@@ -6,9 +6,15 @@ packages:
     git: https://github.com/bitemyapp/esqueleto.git
     commit: 632f4408df05501b02d3e2f951bfdd335ea515ba
   extra-dep: true
-# - location:
-#     git:
+- location:
+    git: https://github.com/yesodweb/wai.git
+    commit: 6bf765e000c6fd14e09ebdea6c4c5b1510ff5376
+    subdirs:
+      - wai-extra
+  extra-dep: true
+
 allow-newer: true
 
 extra-deps:
+  - streaming-commons-0.2.0.0
   - time-1.9.1

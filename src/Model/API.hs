@@ -12,7 +12,7 @@ import Database.Esqueleto.Internal.Sql as Export (SqlQuery)
 import Model as Export
 
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
-getOwnerForUser = undefined
+getOwnerForUser userId = getRecByField OwnerUser userId
 
 getRecsByField' :: ( DBAll val typ backend
                   , MonadIO m
@@ -146,3 +146,19 @@ createUser email pass = do
   hash <- liftIO $ hashPassword pass
   _ <- insert (Password hash userId)
   return (Entity userId newUser)
+
+createOwner :: UserId -> DB (Entity Owner)
+createOwner userKey = do
+  owner <- insertEntity $ Owner userKey
+  return owner
+
+createAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
+createAccount email pass = do
+  user <- createUser email pass
+  owner <- createOwner (entityKey user)
+  account <- insertEntity $ Account (entityKey owner)
+  return (user, owner, account)
+
+createConferenceForAccount :: AccountId -> Text -> Text -> DB (Entity Conference)
+createConferenceForAccount accountId confName confDesc = do
+  insertEntity $ Conference accountId confName confDesc
