@@ -15,6 +15,7 @@ mkYesodData "App" [parseRoutes|
 /login      LoginR   GET POST
 /signup     SignupR  GET POST
 /signout    SignoutR GET
+/contact    ContactR GET
 
 -- Admin
 /organizer/signup                 OrganizerSignupR GET POST
