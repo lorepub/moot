@@ -17,20 +17,10 @@ module Model
 import ClassyPrelude.Yesod hiding ((==.), hash, on, selectFirst)
 
 import Control.Monad.Logger hiding (LoggingT, runLoggingT)
-import Data.Time.Clock
 import Database.Esqueleto hiding (selectFirst)
-import Database.Esqueleto.Internal.Sql
 import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
 import Model.BCrypt as Export
 import Model.Types as Export
-
--- (PrimaryKey, User)
--- data User = User Email UTCTime
--- (PrimaryKey, User)
--- User -> DB PrimaryKey
-
--- Int64
--- Primary email
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users

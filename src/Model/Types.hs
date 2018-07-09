@@ -3,9 +3,7 @@
 module Model.Types where
 
 import ClassyPrelude.Yesod
--- import Data.Bifunctor
 import Data.Fixed
-import Data.Time.Clock
 import Database.Persist.Sql
 import Text.Email.Validate
 import Text.Shakespeare.Text
@@ -59,33 +57,13 @@ instance PersistField Email where
 newtype PasswordText =
   PasswordText Text
 
--- makeNominalDiffTime :: Int64 -> NominalDiffTime
--- makeNominalDiffTime i = secondsToNominalDiffTime (fromIntegral i)
-
--- unpackNominalDiffTime :: NominalDiffTime -> Int64
--- unpackNominalDiffTime ndt =
---   case nominalDiffTimeToSeconds ndt of
---     (MkFixed i) -> (div (fromIntegral i) (floor $ 10 ^ 12))
-
--- instance PersistField NominalDiffTime where
---   toPersistValue = PersistInt64 . unpackNominalDiffTime
---   fromPersistValue (PersistInt64 i) =
---     Right $ makeNominalDiffTime i
---   fromPersistValue pv =
---       Left
---     $ "Tried to deserialize nominaldifftime, expected PersistInt64, got: "
---       <> tshow pv
-
--- instance PersistFieldSql NominalDiffTime where
---   sqlType _ = SqlInt64
-
 newtype Minutes =
   Minutes { unMinutes :: Word64 }
   deriving (Eq, Show, PersistField, PersistFieldSql)
 
 renderMinutes :: Minutes -> Text
-renderMinutes (Minutes min) =
-  case quotRem min 60 of
+renderMinutes (Minutes min') =
+  case quotRem min' 60 of
     -- Well this is plainly bonkers
     (0, 0) -> [st|0 hours, 0 minutes|]
     (0, minutes) -> [st|#{tshow minutes} minutes|]

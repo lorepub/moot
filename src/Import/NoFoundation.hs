@@ -7,8 +7,7 @@ import ClassyPrelude.Conduit as Import
   hiding (delete, deleteBy, groupBy, isNothing, on, Handler (..))
 -- import Yesod as Import hiding (Header, parseTime, update, selectSource)
 import Yesod.Core as Import
-  hiding ( Header, Value, parseTime
-         , update, selectSource)
+  hiding ( Header, Value )
 import Yesod.Form as Import
   hiding (parseTime)
 import Yesod.Persist as Import
