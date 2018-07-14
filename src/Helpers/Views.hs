@@ -30,22 +30,9 @@ renderNav = do
         <a href="@{HomeR}">
           Moot
 
-      <li aria-haspopup="true" aria-label="One" .has-submenu .is-dropdown-submenu-parent .opens-right data-is-click="false" role="menuitem">
-        <a href="#">
-          One
-        <ul .submenu .menu .vertical .is-dropdown-submenu .first-sub data-submenu="" role="menu" style="">
-          <li .is-submenu-item .is-dropdown-submenu-item role="menuitem">
-            <a href="#">
-              One
-          <li .is-submenu-item .is-dropdown-submenu-item role="menuitem">
-            <a href="#">
-              Two
-          <li .is-submenu-item .is-dropdown-submenu-item role="menuitem">
-            <a href="#">
-              Three
       <li role="menuitem">
-        <a href="#">
-          Two
+        <a href="@{ConferencesR}">
+          My Conferences
   ^{rightNav}
 |]
 
