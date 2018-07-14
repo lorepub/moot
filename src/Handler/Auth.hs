@@ -138,28 +138,22 @@ postSignupR = do
   ((result, widget), _) <- runFormPost signupForm
   case result of
     FormSuccess SignupForm{..} -> do
-      runDB $ do
+      dbUserKeyM <- runDB $ do
         maybeUP <- getUserByEmail signupEmail
         case maybeUP of
           (Just _) ->
-            lift $ renderSignup widget
+            return Nothing
           Nothing -> do
             (Entity dbUserKey _) <-
               createUser signupEmail signupPassword
-            lift $ setUserSession dbUserKey True
-            lift $ redirect HomeR
-      -- Check to see if a user with this email already exists
-      -- maybeUP <- runDB $ getUserByEmail signupEmail
-      -- case maybeUP of
-      --   -- If it does, render the form again (?)
-      --   (Just _) -> do
-      --     renderSignup widget
-      --   -- If not, create a user
-      --   Nothing -> do
-      --     (Entity dbUserKey _) <-
-      --       runDB $ createUser signupEmail signupPassword
-      --     setUserSession dbUserKey True
-      --     redirect HomeR
+            return (Just dbUserKey)
+      case dbUserKeyM of
+        Nothing -> do
+          -- TODO: Add an error message about that email already existing.
+          renderSignup widget
+        (Just dbUserKey) -> do
+          setUserSession dbUserKey True
+          redirect HomeR
     _ -> renderSignup widget
 
 getSignoutR :: Handler Html
