@@ -63,13 +63,16 @@ newtype Minutes =
 
 renderMinutes :: Minutes -> Text
 renderMinutes (Minutes min') =
-  case quotRem min' 60 of
-    -- Well this is plainly bonkers
-    (0, 0) -> [st|0 hours, 0 minutes|]
-    (0, minutes) -> [st|#{tshow minutes} minutes|]
-    (hours, 0) -> [st|#{tshow hours} hours|]
-    (hours, minutes) ->
-      [st|#{tshow hours} hours, #{tshow minutes} minutes|]
+  let singPlural :: (Eq a, Num a) => a -> Text
+      singPlural 1 = ""
+      singPlural _ = "s"
+  in case quotRem min' 60 of
+       -- Well this is plainly bonkers
+       (0, 0) -> [st|0 hours, 0 minutes|]
+       (0, minutes) -> [st|#{tshow minutes} minute#{singPlural minutes}|]
+       (hours, 0) -> [st|#{tshow hours} hour#{singPlural hours}|]
+       (hours, minutes) ->
+         [st|#{tshow hours} hour#{singPlural hours}, #{tshow minutes} minute#{singPlural minutes}|]
 
 newtype TalkDuration =
   TalkDuration { unTalkDuration :: Minutes }
