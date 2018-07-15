@@ -110,27 +110,11 @@ postLoginR = do
               redirect HomeR
     _ -> renderLogin widget ["Form failed validation"]
 
-renderSignup :: Widget -> Handler Html
-renderSignup widget = do
-  baseLayout Nothing $ do
-    setTitle "Signup"
-    [whamlet|
-<div>
-  <div>
-    <hr>
-<div>
-  <div>
-    <h3>Signup for an account!
-    <form method="POST" action="@{SignupR}">
-      ^{widget}
-      <input .button type="submit" value="Submit">
-|]
-
 getSignupR :: Handler Html
 getSignupR = do
   redirectIfLoggedIn HomeR
   (signupFormWidget, _) <- generateFormPost signupForm
-  renderSignup signupFormWidget
+  renderSignup signupFormWidget []
 
 postSignupR :: Handler Html
 postSignupR = do
@@ -149,12 +133,11 @@ postSignupR = do
             return (Just dbUserKey)
       case dbUserKeyM of
         Nothing -> do
-          -- TODO: Add an error message about that email already existing.
-          renderSignup widget
+          renderSignup widget ["User already exists."]
         (Just dbUserKey) -> do
           setUserSession dbUserKey True
           redirect HomeR
-    _ -> renderSignup widget
+    _ -> renderSignup widget []
 
 getSignoutR :: Handler Html
 getSignoutR = do
