@@ -57,6 +57,10 @@ instance PersistField Email where
 newtype PasswordText =
   PasswordText Text
 
+newtype Token =
+  Token { tokenText :: Text }
+  deriving (Eq, Show, Read, PathPiece, PersistField, PersistFieldSql)
+
 newtype Minutes =
   Minutes { unMinutes :: Word64 }
   deriving (Eq, Show, PersistField, PersistFieldSql)

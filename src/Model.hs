@@ -33,6 +33,13 @@ Password sql=passwords
   hash BCrypt
   user UserId
 
+Reset sql=resets
+  token Token
+  createdAt UTCTime
+  user UserId
+  UniqueToken token
+  deriving Eq Show
+
 Account sql=accounts
   owner OwnerId
   UniqueAccountOwnerId owner
