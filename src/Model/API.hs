@@ -14,6 +14,17 @@ import Model as Export
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
 getOwnerForUser userId = getRecByField OwnerUser userId
 
+getAccountForOwner :: OwnerId -> DB (Maybe (Entity Account))
+getAccountForOwner ownerId = getRecByField AccountOwner ownerId
+
+getAccountForUser :: UserId -> DB (Maybe (Entity Account))
+getAccountForUser userId = do
+  mOwner <- getOwnerForUser userId
+  case mOwner of
+    Nothing -> pure Nothing
+    Just owner -> getAccountForOwner (entityKey owner)
+
+
 getRecsByField' :: ( DBAll val typ backend
                   , MonadIO m
                  )
@@ -162,3 +173,9 @@ createAccount email pass = do
 createConferenceForAccount :: AccountId -> Text -> Text -> DB (Entity Conference)
 createConferenceForAccount accountId confName confDesc = do
   insertEntity $ Conference accountId confName confDesc
+
+getConferencesByAccount :: AccountId -> DB [Entity Conference]
+getConferencesByAccount accId = getRecsByField ConferenceAccount accId
+
+getConference :: ConferenceId -> DB (Maybe (Entity Conference))
+getConference confId = getRecByField ConferenceId confId

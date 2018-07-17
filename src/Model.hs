@@ -35,10 +35,12 @@ Password sql=passwords
 
 Account sql=accounts
   owner OwnerId
+  UniqueAccountOwnerId owner
   deriving Eq Show
 
 Owner sql=owners
   user UserId
+  UniqueOwnerUserId user
   deriving Eq Show
 
 Admin sql=admins

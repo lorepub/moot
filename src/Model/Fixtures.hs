@@ -69,9 +69,15 @@ insertFixtures = do
   -- let chris = unsafeIdx allUsersF 0
   --     alexey = unsafeIdx allUsersF 1
   let chrisAccount = unsafeIdx allAccountsF 0
-  allConferencesF <-
-    traverse (makeConference (entityKey chrisAccount)) ["ChrisConf"]
-  let userF = UserFixtures {..}
+      alexeyAccount = unsafeIdx allAccountsF 1
+  chrisConferencesF <- do
+    traverse (makeConference (entityKey chrisAccount))
+      ["Chris Conf 9000", "Chris's Other Conf", "Chris's Best Conf" ]
+  alexeyConferencesF <- do
+    traverse (makeConference (entityKey alexeyAccount))
+      ["Alexey Conf 9000", "Alexey's Other Conf", "Alexeys's Best Conf" ]
+  let allConferencesF = chrisConferencesF ++ alexeyConferencesF
+      userF = UserFixtures {..}
       ownerF = OwnerFixtures {..}
       accountF = AccountFixtures {..}
       conferenceF = ConferenceFixtures {..}

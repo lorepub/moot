@@ -19,7 +19,9 @@ requireUser :: Handler (Entity User)
 requireUser = do
   maybeUser <- getUser
   case maybeUser of
-    Nothing -> redirect HomeR -- LoginR
+    Nothing -> do
+      $logWarn "No user session active"
+      redirect HomeR -- LoginR
     (Just user) -> return user
 
 requireOwner :: Handler (Entity User, Entity Owner)
@@ -27,9 +29,21 @@ requireOwner = do
   user <- requireUser
   maybeOwner <- runDB $ getOwnerForUser (entityKey user)
   case maybeOwner of
-    Nothing -> permissionDenied "You are not an owner"
+    Nothing -> do
+      $logWarn "Current owner is not associated with an account"
+      permissionDenied "You are not an owner"
     (Just owner) ->
       return (user, owner)
+
+requireAccount :: Handler (Entity User, Entity Owner, Entity Account)
+requireAccount = do
+  (user, owner) <- requireOwner
+  maybeAccount <- runDB $ getAccountForOwner (entityKey owner)
+  case maybeAccount of
+    Nothing -> do
+      $logWarn "Current user is not associated with an account"
+      permissionDenied "No accounts associated with your user"
+    Just account -> return (user, owner, account)
 
 requireOwnerForEntity ::
      (DBVal a)
@@ -43,7 +57,9 @@ requireOwnerForEntity f w = do
   (user, owner) <- requireOwner
   maybeRec <- runDB $ getRecByField' f w (entityKey owner)
   case maybeRec of
-    Nothing -> permissionDenied "You are not an owner for this resource"
+    Nothing -> do
+      $logWarn "Current user is not Owner for requested resource"
+      permissionDenied "You are not an owner for this resource"
     (Just rec') ->
       return (user, owner, rec')
 
@@ -56,18 +72,18 @@ requireOwnerForConference ::
              )
 requireOwnerForConference conferenceId = do
   (user, owner) <- requireOwner
-  maybeConfAcc <- runDB $ f owner
+  maybeConfAcc <- runDB $ getAccAndConf owner
   case maybeConfAcc of
     Nothing -> permissionDenied "You are not the owner for this conference"
     (Just (acc, conf)) ->
       return (user, owner, acc, conf)
-  where f owner =
-          selectFirst $
-          from $
-          \ (conference `InnerJoin` account) -> do
-            on (conference ^. ConferenceAccount ==. account ^. AccountId)
-            where_ (account ^. AccountOwner ==. val (entityKey owner))
-            return (account, conference)
+  where
+    getAccAndConf owner =
+      selectFirst $
+        from $ \(conference `InnerJoin` account) -> do
+          on (conference ^. ConferenceAccount ==. account ^. AccountId)
+          where_ (account ^. AccountOwner ==. val (entityKey owner))
+          return (account, conference)
 
 -- data AdminOrStronger =
 --     AOSA Admin
