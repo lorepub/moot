@@ -105,14 +105,61 @@ postConferenceAbstractTypesR conferenceId = do
 
 getConferencesR :: Handler Html
 getConferencesR = do
+  (user, owner, account) <- requireAccount
+  conferences <- runDB $ getConferencesByAccount (entityKey account)
   baseLayout Nothing $ do
-    setTitle "My conferences"
+    setTitle "My Conferences"
     [whamlet|
+<article .grid-container>
+  <div .medium-6 .cell>
+    <div .medium-12 .cell>
+      <h1>My Conferences
+    <div .medium-12 .cell>
+    $if null conferences
+      <h5>You haven't created any conferences yet!
+    $else
+      $forall conf <- conferences
+        ^{renderConferenceWidget conf}
 |]
 
 getConferenceDashboardR :: Int64 -> Handler Html
-getConferenceDashboardR conferenceId = do
+getConferenceDashboardR confId = do
+  (_, _, confAcc) <- requireAccount
+  (Conference _ name desc) <- do
+    mConference <- runDB $ fmap entityVal <$> getConference (toSqlKey confId)
+    case mConference of
+      Nothing -> do
+        $logWarn "No conference with the specified Id"
+        notFound
+      Just conf
+        | conferenceAccount conf == entityKey confAcc -> pure conf
+        | otherwise -> do
+            let errMsg = "Current account of user is not the owner of this conference"
+            $logWarn errMsg
+            permissionDenied errMsg
   baseLayout Nothing $ do
-    setTitle "Dashboard"
+    setTitle (fromString (unpack name))
     [whamlet|
+<article .grid-container>
+  <div .medium-12 .cell>
+    <h1>#{name}
+  <div .medium-12 .cell>
+    <p>#{desc}
+  <div .medium-12 .cell>
+    <h1><b>PLACEHOLDER
 |]
+
+renderConferenceDashboardWidget :: Conference -> Widget
+renderConferenceDashboardWidget conf = undefined
+
+renderConferenceWidget :: Entity Conference -> Widget
+renderConferenceWidget confEntity =
+  [whamlet|
+<div .medium-12 .cell>
+  <a href=@{ConferenceDashboardR confId}>
+    <h3>#{name}
+  <p>#{desc}
+|]
+  where
+    confId = fromSqlKey (entityKey confEntity)
+    Conference _ name desc = entityVal confEntity
