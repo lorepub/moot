@@ -21,6 +21,10 @@ install:
   - stack --no-terminal --version
   - stack install happy
   - stack install alex
+  # frontend
+  - cd frontend && npm install
+  # backend
+  - stack install yesod-bin
   # database
   - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
   - createdb -O moot moot
@@ -28,6 +32,8 @@ install:
 script:
   - stack setup
   - stack update
+  # build frontend
+  - cd frontend && npm run-script build
   - stack build
   - stack test
 
