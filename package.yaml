@@ -87,6 +87,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Application
+    - AppType
     - Foundation
     - Import
     - Model
