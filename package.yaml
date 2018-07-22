@@ -87,6 +87,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Application
+    - Foundation
     - Import
     - Model
     - Model.Fixtures
