@@ -35,5 +35,9 @@ script:
   - stack test -- moot:dev
 
 cache:
+  timeout: 2000
   directories:
+  - $HOME/.cabal
+  - $HOME/.ghc
   - $HOME/.stack
+  - .stack-work/
