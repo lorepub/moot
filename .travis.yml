@@ -20,6 +20,7 @@ install:
   - export PATH=~/.local/bin:$PATH
   - stack --no-terminal --version
   - stack install happy
+  - stack install alex
   # database
   - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
   - createdb -O moot moot
