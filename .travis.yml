@@ -1,6 +1,5 @@
-language: haskell
-
 sudo: false
+language: generic
 
 services:
   - postgresql
@@ -14,11 +13,8 @@ addons:
 
   postgresql: "9.6"
 
-env:
- - GHCVER=8.0
-
 install:
-  - export STACK_YAML=stack-$GHCVER.yaml
+  - export STACK_YAML=stack.yaml
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - stack install yesod-bin --install-ghc
@@ -31,8 +27,7 @@ script:
   - stack setup
   - stack update
   - stack build
-  - stack test -- moot:library-only 
-  - stack test -- moot:dev
+  - stack test
 
 cache:
   timeout: 2000
