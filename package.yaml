@@ -89,7 +89,6 @@ library:
     - Application
     - AppType
     - Foundation
-    - Helpers.Handlers
     - Import
     - Model
     - Model.Fixtures
