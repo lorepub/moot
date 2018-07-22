@@ -13,6 +13,11 @@ addons:
 
   postgresql: "9.6"
 
+before_install:
+  - cd frontend
+  - npm install
+  - cd ..
+
 install:
   # stack
   - mkdir -p ~/.local/bin
@@ -21,19 +26,21 @@ install:
   - stack --no-terminal --version
   - stack install happy
   - stack install alex
-  # frontend
-  - cd frontend && npm install
   # backend
   - stack install yesod-bin
   # database
   - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
   - createdb -O moot moot
 
+# build frontend
+before_script:
+  - cd frontend
+  - npm run-script build
+  - cd ..
+
 script:
   - stack setup
   - stack update
-  # build frontend
-  - cd frontend && npm run-script build
   - stack build
   - stack test
 
