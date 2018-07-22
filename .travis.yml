@@ -14,12 +14,12 @@ addons:
   postgresql: "9.6"
 
 install:
-  - export STACK_YAML=stack.yaml
+  # stack
   - mkdir -p ~/.local/bin
-  - export PATH=$HOME/.local/bin:$PATH
-  - stack install yesod-bin --install-ghc
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  - stack --version
+  - travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v1.6.1/stack-1.6.1-linux-x86_64.tar.gz | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - export PATH=~/.local/bin:$PATH
+  - stack --no-terminal --version
+  # database
   - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
   - createdb -O moot moot
 
