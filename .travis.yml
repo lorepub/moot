@@ -1,0 +1,39 @@
+language: haskell
+
+sudo: false
+
+services:
+  - postgresql
+
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+      - postgresql-client
+      - postgresql-server-dev-all
+
+  postgresql: "9.6"
+
+env:
+ - GHCVER=8.0
+
+install:
+  - export STACK_YAML=stack-$GHCVER.yaml
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - stack install yesod-bin --install-ghc
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - stack --version
+  - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
+  - createdb -O moot moot
+
+script:
+  - stack setup
+  - stack update
+  - stack build
+  - stack test -- moot:library-only 
+  - stack test -- moot:dev
+
+cache:
+  directories:
+  - $HOME/.stack
