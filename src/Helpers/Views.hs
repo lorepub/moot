@@ -21,7 +21,8 @@ baseLayout _ content = do
 
 renderNav :: Handler Widget
 renderNav = do
-  rightNav <- renderRightNav
+  maybeUser <- getUser
+  rightNav <- renderRightNav maybeUser
   return [whamlet|
 <div .top-bar>
   <div .top-bar-left>
@@ -29,16 +30,15 @@ renderNav = do
       <li role="menuitem">
         <a href="@{HomeR}">
           Moot
-
-      <li role="menuitem">
-        <a href="@{ConferencesR}">
-          My Conferences
+      $maybe _ <- maybeUser      
+        <li role="menuitem">
+          <a href="@{ConferencesR}">
+            My Conferences
   ^{rightNav}
 |]
 
-renderRightNav :: Handler Widget
-renderRightNav = do
-  maybeUser <- getUser
+renderRightNav :: Maybe (Entity User) -> Handler Widget
+renderRightNav maybeUser = do
   return [whamlet|
   <div .top-bar-right>
     <ul .menu>
