@@ -7,11 +7,12 @@ module TestImport
     ) where
 
 import Application           (makeFoundation, makeLogWare)
+import AppType
 import ClassyPrelude         as X hiding (delete, deleteBy, Handler)
 import Database.Persist      as X hiding (get)
 import Database.Persist.Sql  (SqlPersistM, runSqlPersistMPool, rawExecute, rawSql, unSingle, connEscapeName)
-import AppType
 import Foundation            as X
+import Helpers.Handlers
 import Model                 as X
 import Test.Hspec            as X
 import Text.Shakespeare.Text (st)
