@@ -3,6 +3,7 @@ module Handler.Abstract where
 import Import
 
 import Helpers.Forms
+import Helpers.Handlers
 import Helpers.Views
 
 abstractBlurbMarkdown = ""
@@ -120,36 +121,102 @@ data SubmittedAbstract =
   SubmittedAbstract {
     submittedAbstractEmail :: Email
   , submittedAbstractPassword :: Text
+  , submittedAbstractSpeaker :: Text
   , submittedAbstractTitle :: Text
-  , submittedAbstractBody :: Text
-  , submittedAbstractType :: Text
+  , submittedAbstractBody :: Textarea
+  , submittedAbstractType :: AbstractTypeId
   } deriving Show
 
-abstractForm :: Form SubmittedAbstract
-abstractForm =
+renderAbstractTypeDropdown :: Entity AbstractType -> (Text, AbstractTypeId)
+renderAbstractTypeDropdown (Entity abstractTypeK abstractType) =
+  let -- durationLabel =
+      --   abstractTypeDuration abstractType
+      prettyAbstractLabel =
+        renderAbstractType abstractType
+        -- [st|#{abstractTypeName abstractType} (#{durationLabel})|]
+  in (prettyAbstractLabel, abstractTypeK) 
+
+abstractForm :: [Entity AbstractType] -> Form SubmittedAbstract
+abstractForm abstractTypes = do
+  let abstractTypeList :: [(Text, AbstractTypeId)]
+      abstractTypeList =
+        map
+        renderAbstractTypeDropdown
+        abstractTypes
   renderDivs $
       SubmittedAbstract
-  <$> areq emailField' (named "email"
-                       (placeheld "Email:")) Nothing
-  <*> areq passwordField (named "password"
-                          (placeheld "Password: ")) Nothing
-  <*> areq textField (named "abstract-title"
-                      (placeheld "Abstract title:")) Nothing
-  <*> areq textField (named "abstract-body"
-                      (placeheld "Abstract proposal:")) Nothing
-  <*> areq textField (named "abstract-type"
-                      (placeheld "Abstract type:")) Nothing
+      <$> areq emailField' (named "email"
+                           (placeheld "Email:")) Nothing
+      <*> areq passwordField (named "password"
+                              (placeheld "Password: ")) Nothing
+      <*> areq textField (named "speaker-name"
+                          (placeheld "Speaker's name:")) Nothing
+      <*> areq textField (named "abstract-title"
+                          (placeheld "Abstract title:")) Nothing
+      <*> areq textareaField (named "abstract-body"
+                              (placeheld "Abstract proposal:")) Nothing
+      <*> areq (selectFieldList abstractTypeList)
+               (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
-getSubmitAbstractR :: Handler Html
-getSubmitAbstractR = do
-  (widget, _) <- generateFormPost abstractForm
+renderSubmitAbstract :: Int64
+                     -> Widget
+                     -> Handler Html
+renderSubmitAbstract confId submitAbstractForm =
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
     <div .medium-6 .cell>
-      ^{widget}
-      <input data-disable-with="Login" name="commit" type="submit" value="Login">
+      <form method="POST"
+            action="@{SubmitAbstractR confId}">
+        ^{submitAbstractForm}
+        <input .button type="submit" value="Submit abstract">
 |]
 
-postSubmitAbstractR :: Handler Html
-postSubmitAbstractR = undefined
+getSubmitAbstractR :: Int64 -> Handler Html
+getSubmitAbstractR conferenceId = do
+  abstractTypes <- runDB $ abstractTypesForConference (toSqlKey conferenceId)
+  (widget, _) <- generateFormPost (abstractForm abstractTypes)
+  renderSubmitAbstract conferenceId widget
+
+postSubmitAbstractR :: Int64 -> Handler Html
+postSubmitAbstractR conferenceId = do
+  let confK = toSqlKey conferenceId
+  abstractTypes <- runDBOr404 $ do
+    maybeConf <- get confK
+    case maybeConf of
+      Nothing -> return Nothing
+      (Just _) -> do
+        fmap Just $ abstractTypesForConference confK
+
+  ((result, widget), _) <- runFormPost (abstractForm abstractTypes)
+  case result of
+    FormSuccess
+      (SubmittedAbstract email password name title body abstractTypeId) -> do
+        abstractKey <- runDB $ do
+          user <- createUser email password
+          lift $ setUserSession (entityKey user) True
+          maybeAbstractType <- get abstractTypeId
+          case maybeAbstractType of
+            Nothing -> undefined
+            (Just _) -> do
+              insert
+                (Abstract
+                 confK (entityKey user)
+                 title abstractTypeId
+                 (unTextarea body) Nothing)
+        redirect (SubmittedAbstractR conferenceId)
+    _ -> renderSubmitAbstract conferenceId widget
+
+getSubmittedAbstractR :: Int64 -> Handler Html
+getSubmittedAbstractR confId = do
+  let confK :: ConferenceId
+      confK = toSqlKey confId
+  _ <- runDBOr404 $ get confK
+  baseLayout Nothing $ [whamlet|
+<article .grid-container>
+  <div .grid-x .grid-margin-x>
+    <div .medium-6 .cell>
+      <h3>You have successfully submitted your abstract!
+      <p>
+        Would you like to <a href="@{SubmitAbstractR confId}">submit another?</a>
+|]

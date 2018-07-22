@@ -59,17 +59,6 @@ Conference sql=conferences
   description Text
   deriving Eq Show
 
-AbstractSubmission sql=abstract_submissions
-  title Text
-  description Text
-  author UserId
-  deriving Eq Show
-
-EditedAbstract sql=edited_abstracts
-  abstract AbstractSubmissionId
-  editedDescription Text
-  deriving Show
-
 CustomForm sql=custom_forms
   user UserId
   deriving Eq Show
@@ -97,8 +86,10 @@ AbstractType sql=abstract_types
   deriving Eq Show
 
 Abstract sql=abstracts
+  conference ConferenceId
   user UserId
   title Text
+  abstractType AbstractTypeId
   authorAbstract Text
   editedAbstract Text Maybe
   deriving Eq Show

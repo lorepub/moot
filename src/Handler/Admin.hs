@@ -146,7 +146,9 @@ getConferenceDashboardR confId = do
   <div .medium-12 .cell>
     <p>#{desc}
   <div .medium-12 .cell>
-    <h1><b>PLACEHOLDER
+    <h1>
+      <a href="@{ConferenceAbstractTypesR confId}">
+        Abstract types
 |]
 
 renderConferenceDashboardWidget :: Conference -> Widget

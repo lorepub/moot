@@ -179,3 +179,7 @@ getConferencesByAccount accId = getRecsByField ConferenceAccount accId
 
 getConference :: ConferenceId -> DB (Maybe (Entity Conference))
 getConference confId = getRecByField ConferenceId confId
+
+abstractTypesForConference :: ConferenceId -> DB [Entity AbstractType]
+abstractTypesForConference confId =
+  getRecsByField AbstractTypeConference confId
