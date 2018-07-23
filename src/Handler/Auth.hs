@@ -30,29 +30,26 @@ requireOwner = do
   maybeOwner <- runDB $ getOwnerForUser (entityKey user)
   case maybeOwner of
     Nothing -> do
-      $logWarn "Current owner is not associated with an account"
-      permissionDenied "You are not an owner"
+      $logWarn "Current user is not associated with an owner"
+      permissionDenied "Current user is not associated with an owner"
     (Just owner) ->
       return (user, owner)
 
-requireAccount :: Handler (Entity User, Entity Owner, Entity Account)
+requireAccount :: Handler (Entity User, Entity Account)
 requireAccount = do
-  (user, owner) <- requireOwner
-  maybeAccount <- runDB $ getAccountForOwner (entityKey owner)
+  user <- requireUser
+  maybeAccount <- runDB $ getAccountByUser (entityKey user)
   case maybeAccount of
     Nothing -> do
       $logWarn "Current user is not associated with an account"
       permissionDenied "No accounts associated with your user"
-    Just account -> return (user, owner, account)
+    Just account -> return (user, account)
 
-requireOwnerForEntity ::
-     (DBVal a)
+requireOwnerForEntity
+  :: DBVal a
   => EntityField a (Key Owner)
   -> (SqlExpr (Entity a) -> SqlQuery b)
-  -> Handler ( Entity User
-             , Entity Owner
-             , Entity a
-             )
+  -> Handler (Entity User, Entity Owner, Entity a)
 requireOwnerForEntity f w = do
   (user, owner) <- requireOwner
   maybeRec <- runDB $ getRecByField' f w (entityKey owner)
@@ -63,39 +60,47 @@ requireOwnerForEntity f w = do
     (Just rec') ->
       return (user, owner, rec')
 
-requireOwnerForConference ::
-     ConferenceId
-  -> Handler ( Entity User
-             , Entity Owner
-             , Entity Account
-             , Entity Conference
-             )
+requireOwnerForConference
+  :: ConferenceId
+  -> Handler ( Entity User, Entity Owner, Entity Account, Entity Conference)
 requireOwnerForConference conferenceId = do
   (user, owner) <- requireOwner
   maybeConfAcc <- runDB $ getAccAndConf owner
   case maybeConfAcc of
-    Nothing -> permissionDenied "You are not the owner for this conference"
-    (Just (acc, conf)) ->
+    Nothing -> do
+      $logWarn "Current user is not associated with an account"
+      permissionDenied "No accounts associated with your user"
+    Just (_, Nothing) -> do
+      $logWarn "Current user is not associated with any conferences"
+      permissionDenied "No conferences associated with your user"
+    Just (acc, Just conf) ->
       return (user, owner, acc, conf)
   where
+    getAccAndConf :: Entity Owner -> DB (Maybe (Entity Account, Maybe (Entity Conference)))
     getAccAndConf owner =
       selectFirst $
-        from $ \(conference `InnerJoin` account) -> do
-          on (conference ^. ConferenceAccount ==. account ^. AccountId)
+        from $ \(account `LeftOuterJoin` mConference) -> do
+          on (just (account ^. AccountId) ==. mConference ?. ConferenceAccount)
           where_ (account ^. AccountOwner ==. val (entityKey owner))
-          return (account, conference)
+          return (account, mConference)
 
--- data AdminOrStronger =
---     AOSA Admin
---   | AOSO Owner
---   deriving Show
-
--- data Permissions =
---   CanEditAbstractTypes AdminOrStronger
---   deriving Show
-
--- type family Permitted a where
---   Permitted 'CanEditAbstractTypes = Admin
+requireAdminForConference
+  :: ConferenceId
+  -> Handler (Entity User, Entity Conference)
+requireAdminForConference conferenceId = do
+  user <- requireUser
+  mConf <- runDB (getOwnerForConference conferenceId)
+  case mConf of
+    Nothing -> do
+      let errMsg = "Conference does not exist"
+      $logWarn errMsg >> permissionDenied errMsg
+    Just (conf, owner) -> do
+      unless (ownerUser (entityVal owner) == entityKey user) $ do
+        isAdmin <- runDB (isUserConferenceAdmin (entityKey user))
+        unless isAdmin $ do
+          let errMsg = "Current User is not an admin of the conference"
+          $logWarn errMsg >> permissionDenied errMsg
+      pure (user, conf)
 
 getLoginR :: Handler Html
 getLoginR = do

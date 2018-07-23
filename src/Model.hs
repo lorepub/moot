@@ -35,22 +35,24 @@ Password sql=passwords
 
 Account sql=accounts
   owner OwnerId
-  UniqueAccountOwnerId owner
+  UniqueAccountOwner owner
   deriving Eq Show
 
 Owner sql=owners
   user UserId
-  UniqueOwnerUserId user
+  UniqueOwnerUser user
   deriving Eq Show
 
 Admin sql=admins
-  account AccountId
   user UserId
+  conference ConferenceId
+  UniqueAdminUserConference user conference
   deriving Eq Show
 
 Editor sql=editors
-  account AccountId
   user UserId
+  conference ConferenceId
+  UniqueEditorUserConference user conference
   deriving Eq Show
 
 Conference sql=conferences
@@ -94,14 +96,18 @@ AbstractType sql=abstract_types
   conference ConferenceId
   name Text
   duration TalkDuration
+  UniqueAbstractConference conference
   deriving Eq Show
 
 Abstract sql=abstracts
   user UserId
+  abstractType AbstractTypeId
   title Text
   authorAbstract Text
   editedAbstract Text Maybe
+  UniqueAbstractAbstractType abstractType
   deriving Eq Show
+
 |]
 
 dumpMigration :: DB ()

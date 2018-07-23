@@ -14,16 +14,16 @@ import Model as Export
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
 getOwnerForUser userId = getRecByField OwnerUser userId
 
-getAccountForOwner :: OwnerId -> DB (Maybe (Entity Account))
-getAccountForOwner ownerId = getRecByField AccountOwner ownerId
+getAccountByOwner :: OwnerId -> DB (Maybe (Entity Account))
+getAccountByOwner ownerId = getRecByField AccountOwner ownerId
 
-getAccountForUser :: UserId -> DB (Maybe (Entity Account))
-getAccountForUser userId = do
-  mOwner <- getOwnerForUser userId
-  case mOwner of
-    Nothing -> pure Nothing
-    Just owner -> getAccountForOwner (entityKey owner)
-
+getAccountByUser :: UserId -> DB (Maybe (Entity Account))
+getAccountByUser userId = do
+  selectFirst $
+    from $ \(account `InnerJoin` owner) -> do
+      on (account ^. AccountOwner ==. owner ^. OwnerId)
+      where_ (owner ^. OwnerUser ==. val userId)
+      return account
 
 getRecsByField' :: ( DBAll val typ backend
                   , MonadIO m
@@ -170,6 +170,10 @@ createAccount email pass = do
   account <- insertEntity $ Account (entityKey owner)
   return (user, owner, account)
 
+--------------------------------------------------------------------------------
+-- Conferences
+--------------------------------------------------------------------------------
+
 createConferenceForAccount :: AccountId -> Text -> Text -> DB (Entity Conference)
 createConferenceForAccount accountId confName confDesc = do
   insertEntity $ Conference accountId confName confDesc
@@ -179,3 +183,44 @@ getConferencesByAccount accId = getRecsByField ConferenceAccount accId
 
 getConference :: ConferenceId -> DB (Maybe (Entity Conference))
 getConference confId = getRecByField ConferenceId confId
+
+-- | This function uses inner joins because there is a foreign key constraint on
+-- conferences to reference an 'Account', and a foreign key in the accounts
+-- table that must reference an owner; i.e. Conferences must have owners, if
+-- they exist.
+getOwnerForConference
+  :: ConferenceId
+  -> DB (Maybe (Entity Conference, Entity Owner))
+getOwnerForConference confId =
+  selectFirst $
+    from $ \(conference `InnerJoin` account `InnerJoin` owner) -> do
+      on (account ^. AccountOwner ==. owner ^. OwnerId)
+      on (conference ^. ConferenceAccount ==. account ^. AccountId)
+      where_ (conference ^. ConferenceId ==. (val confId))
+      pure (conference, owner)
+
+-- | Return whether or not the user is an admin of the conference
+-- Warning: Does not check if user is the owner of the conference
+isUserConferenceAdmin :: UserId -> DB Bool
+isUserConferenceAdmin userId = do
+  mAdmin <- selectFirst $ from $ \admin ->
+    where_ (admin ^. AdminUser ==. val (userId))
+  case mAdmin of
+    Nothing -> pure False
+    Just _  -> pure True
+
+--------------------------------------------------------------------------------
+-- Abstracts
+--------------------------------------------------------------------------------
+
+getAbstractTypes :: ConferenceId -> DB [Entity AbstractType]
+getAbstractTypes conferenceId =
+  getRecsByField AbstractTypeConference conferenceId
+
+getAbstractsForConference :: ConferenceId -> DB [(Entity Abstract, Entity AbstractType)]
+getAbstractsForConference conferenceId =
+  select $
+    from $ \(abstractType `InnerJoin` abstract) -> do
+      on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
+      where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
+      pure (abstract, abstractType)
