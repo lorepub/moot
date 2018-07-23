@@ -12,9 +12,8 @@ import Database.Esqueleto.Internal.Sql as Export (SqlQuery)
 import Model as Export
 
 import Data.Time.Clock
-import System.Random (mkStdGen, randomRs)
-import qualified Crypto.Hash.SHA1 as SHA1 (hash)
-import qualified Data.ByteString as B (pack)
+import Data.UUID (toByteString)
+import Data.UUID.V4 (nextRandom)
 import qualified Data.ByteString.Base16 as B16 (encode)
 import qualified Database.Persist as P
 
@@ -188,10 +187,8 @@ resetUserPassword token newPassword = do
 
 createReset :: UserId -> DB (Entity Reset)
 createReset userKey = do
-  time <- liftIO getCurrentTime
-  let seed   = fromIntegral . diffTimeToPicoseconds . utctDayTime $ time
-      rBytes = randomRs (0, 255 :: Word8) (mkStdGen seed)
-      token  = decodeUtf8 . B16.encode . SHA1.hash . B.pack . take 40 $ rBytes
+  time  <- liftIO getCurrentTime
+  token <- liftIO $ decodeUtf8 . B16.encode . toStrict . toByteString <$> nextRandom 
   reset <- insertEntity $ Reset (Token token) time userKey
   return reset
 

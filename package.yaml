@@ -45,7 +45,6 @@ dependencies:
 - classy-prelude-yesod >=1.4 && <1.5
 - conduit >=1.0 && <2.0
 - containers
-- cryptohash
 - data-default
 - directory >=1.1 && <1.4
 - email-validate
@@ -63,7 +62,6 @@ dependencies:
 - persistent >=2.8 && <2.9
 - persistent-postgresql >=2.8 && <2.9
 - persistent-template >=2.5 && <2.9
-- random
 - safe
 - shakespeare >=2.0 && <2.1
 - template-haskell
@@ -71,6 +69,7 @@ dependencies:
 - transformers
 - time
 - unordered-containers
+- uuid
 - vector
 - wai
 - wai-extra >=3.0 && <3.1

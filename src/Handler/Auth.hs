@@ -188,9 +188,8 @@ postForgotR = do
 getResetR :: Token -> Handler Html
 getResetR token = do
   redirectIfLoggedIn HomeR
-  maybeUser <- runDB $ do
-    deleteOldResets
-    getUserByResetToken token
+  runDB deleteOldResets
+  maybeUser <- runDB $ getUserByResetToken token
   case maybeUser of
     (Just _) -> do
       (resetFormWidget, _) <- generateFormPost resetForm
@@ -201,9 +200,8 @@ getResetR token = do
 postResetR :: Token -> Handler Html
 postResetR token = do
   redirectIfLoggedIn HomeR
-  maybeUserPassword <- runDB $ do
-    deleteOldResets
-    getUserPasswordByResetToken token
+  runDB deleteOldResets
+  maybeUserPassword <- runDB $ getUserPasswordByResetToken token
   case maybeUserPassword of
     (Just _) -> do
       ((result, _), _) <- runFormPost resetForm
