@@ -6,9 +6,6 @@ import Helpers.Forms
 import Helpers.Handlers
 import Helpers.Views
 
-abstractBlurbMarkdown = ""
-abstractTypes = []
-
 -- email address
 -- twitter handle
 -- phone number (Maybe)

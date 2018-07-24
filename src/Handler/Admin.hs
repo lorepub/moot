@@ -4,7 +4,6 @@ import Import
 
 import Handler.Auth
 import Helpers.Forms
-import Helpers.Handlers
 import Helpers.Views
 
 getOrganizerSignupR :: Handler Html
@@ -160,8 +159,8 @@ renderConferenceWidget confEntity =
 <div .medium-12 .cell>
   <a href=@{ConferenceDashboardR confId}>
     <h3>#{name}
-  <p>#{desc}
+  <p>#{desc'}
 |]
   where
     confId = fromSqlKey (entityKey confEntity)
-    Conference _ name desc = entityVal confEntity
+    Conference _ name desc' = entityVal confEntity

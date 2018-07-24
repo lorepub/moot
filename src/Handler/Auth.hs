@@ -4,9 +4,6 @@ import Import
 
 import Handler.Auth.Forms
 import Handler.Auth.Views
-import Handler.Sessions
-import Helpers.Forms
-import Helpers.Views
 
 redirectIfLoggedIn :: (RedirectUrl App r) => r -> Handler ()
 redirectIfLoggedIn r = do
@@ -83,6 +80,7 @@ requireOwnerForConference conferenceId = do
         from $ \(conference `InnerJoin` account) -> do
           on (conference ^. ConferenceAccount ==. account ^. AccountId)
           where_ (account ^. AccountOwner ==. val (entityKey owner))
+          where_ (conference ^. ConferenceId ==. val conferenceId)
           return (account, conference)
 
 -- data AdminOrStronger =

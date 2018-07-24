@@ -4,7 +4,7 @@ module Import.NoFoundation
     ) where
 
 import ClassyPrelude.Conduit as Import
-  hiding (delete, deleteBy, groupBy, isNothing, on, Handler (..))
+  hiding ((<&>), delete, deleteBy, groupBy, isNothing, on, Handler (..))
 -- import Yesod as Import hiding (Header, parseTime, update, selectSource)
 import Yesod.Core as Import
   hiding ( Header, Value )
