@@ -134,7 +134,7 @@ getConferenceDashboardR confId = do
     <h2>
       <a href=@{ConferenceCallForProposalsR confId}>
         Call For Proposals
-    <h1>
+    <h2>
       <a href="@{ConferenceAbstractTypesR confId}">
         Abstract types
 |]
@@ -164,26 +164,29 @@ getConferenceCallForProposalsR confId = do
     setTitle "Call for Proposals"
     [whamlet|
 <article .grid-container>
-  <div .medium-12 .cell>
-    <h1>#{length abstracts} Abstract Submissions
-  $forall abstractAndType <- abstracts
-    <div .medium-12 .cell>
-      ^{renderAbstractRow abstractAndType}
+  <div .row>
+    <div .medium-12 .column>
+      <h1>#{length abstracts} Abstract Submissions
+  <div .row>
+    $forall abstractAndType <- abstracts
+      <div .medium-12 .column>
+        ^{renderAbstractRow abstractAndType}
 |]
 
 renderAbstractRow :: (Entity Abstract, Entity AbstractType) -> Widget
 renderAbstractRow (abstract, abstractType) =
   [whamlet|
-<div .medium-2 .cell>
-  <h3>title
-<div .medium-4 .cell>
-  <h3>#{name}
-  <p>#{renderTalkDuration duration}
-<div .medium-6 .cell>
-  <p>#{contentPreview}
+<div .row>
+  <div .medium-12>
+    <h3>#{title}
+  <div .row>
+    <div .medium-4 .column>
+      <h4> #{name} | #{renderTalkDuration duration}
+    <div .medium-8 .column>
+      <p>#{contentPreview}
 |]
   where
-    Abstract user _ title authorAbs meditedAbs = entityVal abstract
+    Abstract user title _ authorAbs meditedAbs = entityVal abstract
     AbstractType _ name duration = entityVal abstractType
 
     contentPreview = take 100 (fromMaybe authorAbs meditedAbs) <> "..."

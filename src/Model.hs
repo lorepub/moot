@@ -85,7 +85,7 @@ AbstractType sql=abstract_types
   conference ConferenceId
   name Text
   duration TalkDuration
-  UniqueAbstractConference conference
+  UniqueAbstractConferenceName conference name
   deriving Eq Show
 
 Abstract sql=abstracts
