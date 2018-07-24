@@ -4,7 +4,6 @@ import Import
 
 import Handler.Auth
 import Helpers.Forms
-import Helpers.Handlers
 import Helpers.Views
 
 getOrganizerSignupR :: Handler Html
@@ -125,18 +124,19 @@ getConferencesR = do
 getConferenceDashboardR :: Int64 -> Handler Html
 getConferenceDashboardR confId = do
   (_, confEntity) <- requireAdminForConference (toSqlKey confId)
-  let (Conference _ name desc) = entityVal confEntity
+  let confName = conferenceName (entityVal confEntity)
   baseLayout Nothing $ do
-    setTitle (fromString (unpack name))
+    setTitle (fromString (unpack confName))
     [whamlet|
 <article .grid-container>
+  ^{renderConferenceWidget confEntity}
   <div .medium-12 .cell>
-    <h1>#{name}
-  <div .medium-12 .cell>
-    <p>#{desc}
-  <div .medium-12 .cell>
-    <a href=@{ConferenceCallForProposalsR confId}>
-      <h2>Call For Proposals
+    <h2>
+      <a href=@{ConferenceCallForProposalsR confId}>
+        Call For Proposals
+    <h1>
+      <a href="@{ConferenceAbstractTypesR confId}">
+        Abstract types
 |]
 
 renderConferenceWidget :: Entity Conference -> Widget
@@ -144,7 +144,8 @@ renderConferenceWidget confEntity =
   [whamlet|
 <div .medium-12 .cell>
   <a href=@{ConferenceDashboardR confId}>
-    <h3>#{name}
+    <h1>#{name}
+<div .medium-12 .cell>
   <p>#{desc}
 |]
   where
@@ -166,19 +167,20 @@ getConferenceCallForProposalsR confId = do
   <div .medium-12 .cell>
     <h1>#{length abstracts} Abstract Submissions
   $forall abstractAndType <- abstracts
-    ^{renderAbstractRow abstractAndType}
+    <div .medium-12 .cell>
+      ^{renderAbstractRow abstractAndType}
 |]
 
 renderAbstractRow :: (Entity Abstract, Entity AbstractType) -> Widget
-renderAbstractRow (abstract, abstractType) = [whamlet|
-<div .medium-12 .cell>
-  <div .medium-2 .cell>
-    <h3>#{title}
-  <div .medium-4 .cell>
-    <h3>#{name}
-    <p>renderTalkDuration duration
-  <div .medium-6 .cell>
-    <p>contentPreview
+renderAbstractRow (abstract, abstractType) =
+  [whamlet|
+<div .medium-2 .cell>
+  <h3>title
+<div .medium-4 .cell>
+  <h3>#{name}
+  <p>#{renderTalkDuration duration}
+<div .medium-6 .cell>
+  <p>#{contentPreview}
 |]
   where
     Abstract user _ title authorAbs meditedAbs = entityVal abstract

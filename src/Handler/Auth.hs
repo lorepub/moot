@@ -4,9 +4,6 @@ import Import
 
 import Handler.Auth.Forms
 import Handler.Auth.Views
-import Handler.Sessions
-import Helpers.Forms
-import Helpers.Views
 
 redirectIfLoggedIn :: (RedirectUrl App r) => r -> Handler ()
 redirectIfLoggedIn r = do

@@ -22,11 +22,21 @@ data ConferenceFixtures =
   ConferenceFixtures { allConferencesF :: [Entity Conference] }
   deriving (Eq, Show)
 
+data AbstractFixtures =
+  AbstractFixtures { allAbstractsF :: [Entity Abstract] }
+  deriving (Eq, Show)
+
+data AbstractTypeFixtures =
+  AbstractTypeFixtures { allAbstractTypesF :: [Entity AbstractType] }
+  deriving (Eq, Show)
+
 data Fixtures =
   Fixtures { userF :: UserFixtures
            , ownerF :: OwnerFixtures
            , accountF :: AccountFixtures
            , conferenceF :: ConferenceFixtures
+           , abstractTypeF :: AbstractTypeFixtures
+           , abstractF :: AbstractFixtures
            }
   deriving (Eq, Show)
 
@@ -40,6 +50,11 @@ alexeyEmail = [email|alexey@lol.com|]
 alexeyPassword :: Text
 alexeyPassword = "alexeyPass"
 
+waddlestonEmail :: Email
+waddlestonEmail = [email|waddleston@lol.com|]
+waddlestonPassword :: Text
+waddlestonPassword = "waddlesPass"
+
 makeAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
 makeAccount email' pass = do
   createAccount email' pass
@@ -48,7 +63,16 @@ makeAccounts :: DB ([Entity User], [Entity Owner], [Entity Account])
 makeAccounts =
   unzip3 <$>
   sequenceA [ makeAccount chrisEmail chrisPassword
-            , makeAccount alexeyEmail alexeyPassword ]
+            , makeAccount alexeyEmail alexeyPassword
+            ]
+
+makeUser :: Email -> Text -> DB (Entity User)
+makeUser email' pass = do
+  createUser email' pass
+
+makeUsers :: DB [Entity User]
+makeUsers =
+  sequenceA [ makeUser waddlestonEmail waddlestonPassword ]
 
 {-# INLINABLE unsafeIdx #-}
 unsafeIdx :: (MonoFoldable c) => c -> Integer -> Element c
@@ -59,28 +83,85 @@ unsafeIdx xs n
                        0 -> x
                        _ -> r (k-1)) (error ("index too large: " ++ show n))  xs n
 
-makeConference :: AccountId -> Text -> DB (Entity Conference)
+makeConference :: AccountId
+               -> Text
+               -> DB (Entity Conference)
 makeConference accountId confName =
   createConferenceForAccount accountId confName "The coolest code conf"
 
+makeAbstractType :: ConferenceId
+                 -> TalkDuration
+                 -> Text
+                 -> DB (Entity AbstractType)
+makeAbstractType abstractTypeConference
+                 abstractTypeDuration
+                 abstractTypeName =
+  insertEntity AbstractType{..}
+
+makeAbstract :: ConferenceId
+             -> UserId
+             -> AbstractTypeId
+             -> Text
+             -> DB (Entity Abstract)
+makeAbstract abstractConference abstractUser
+             abstractAbstractType abstractTitle = do
+  let abstractAuthorAbstract = "my abstract body"
+      abstractEditedAbstract = Nothing
+  insertEntity Abstract{..}
+
 insertFixtures :: DB Fixtures
 insertFixtures = do
-  (allUsersF, allOwnersF, allAccountsF) <- makeAccounts
-  -- let chris = unsafeIdx allUsersF 0
-  --     alexey = unsafeIdx allUsersF 1
-  let chrisAccount = unsafeIdx allAccountsF 0
+  (accountUsersF, allOwnersF, allAccountsF) <- makeAccounts
+  plainUsersF <- makeUsers
+  let allUsersF = accountUsersF <> plainUsersF
+      chrisAccount = unsafeIdx allAccountsF 0
+      chrisAccountK = entityKey chrisAccount
       alexeyAccount = unsafeIdx allAccountsF 1
-  chrisConferencesF <- do
-    traverse (makeConference (entityKey chrisAccount))
+      alexeyAccountK = entityKey alexeyAccount
+      waddlesUser = unsafeIdx plainUsersF 0
+      waddlesUserK = entityKey waddlesUser
+  chrisConferencesF <-
+    traverse (makeConference chrisAccountK)
       ["Chris Conf 9000", "Chris's Other Conf", "Chris's Best Conf" ]
-  alexeyConferencesF <- do
-    traverse (makeConference (entityKey alexeyAccount))
+  alexeyConferencesF <-
+    traverse (makeConference alexeyAccountK)
       ["Alexey Conf 9000", "Alexey's Other Conf", "Alexeys's Best Conf" ]
+
+  let chrisFirstConf = unsafeIdx chrisConferencesF 0
+      chrisFirstConfK = entityKey chrisFirstConf
+      shortTalkDur = TalkDuration (Minutes 15)
+      defaultTalkDur = TalkDuration (Minutes 60)
+      longTalkDur = TalkDuration (Minutes 120)
+  allAbstractTypesF <-
+    traverse (uncurry $ makeAbstractType chrisFirstConfK)
+    [ ( defaultTalkDur, "Goldilocks" )
+    , ( shortTalkDur, "Crisp" )
+    , ( longTalkDur, "The Thing" )
+    ]
+
+  let goldilocksAbstractType = unsafeIdx allAbstractTypesF 0
+      goldilocksAbstractTypeK = entityKey goldilocksAbstractType
+      -- crispAbstractType = unsafeIdx allAbstractTypesF 1
+      -- crispAbstractTypeK = entityKey crispAbstractType
+      theThingAbstractType = unsafeIdx allAbstractTypesF 2
+      theThingAbstractTypeK = entityKey theThingAbstractType
+
+  allAbstractsF <-
+    traverse (uncurry $ makeAbstract chrisFirstConfK waddlesUserK)
+      [ ( theThingAbstractTypeK
+        , "zygohistomorphic prepromorphisms and their malcontents"
+        )
+      , ( goldilocksAbstractTypeK
+        , "Bananas, Lenses and Barbreh Strysend" )
+      ]
+
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF
       userF = UserFixtures {..}
       ownerF = OwnerFixtures {..}
       accountF = AccountFixtures {..}
       conferenceF = ConferenceFixtures {..}
+      abstractTypeF = AbstractTypeFixtures {..}
+      abstractF = AbstractFixtures {..}
   return Fixtures {..}
 
 
