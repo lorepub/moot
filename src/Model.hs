@@ -94,7 +94,6 @@ Abstract sql=abstracts
   abstractType AbstractTypeId
   authorAbstract Text
   editedAbstract Text Maybe
-  UniqueAbstractAbstractType abstractType
   deriving Eq Show
 
 |]
