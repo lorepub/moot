@@ -28,6 +28,8 @@ install:
   - stack install alex
   # backend
   - stack install yesod-bin
+  # test suite
+  - stack install hspec-discover
   # database
   - echo "CREATE USER moot WITH PASSWORD 'moot';" | psql postgres
   - createdb -O moot moot
