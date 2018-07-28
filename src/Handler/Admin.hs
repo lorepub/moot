@@ -2,8 +2,14 @@ module Handler.Admin where
 
 import Import
 
+import Colonnade hiding (fromMaybe)
+import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as HA
+import Yesod.Colonnade
+
 import Handler.Auth
 import Helpers.Forms
+import Helpers.Handlers
 import Helpers.Views
 
 getOrganizerSignupR :: Handler Html
@@ -52,7 +58,7 @@ abstractTypeForm =
                         (placeheld "Talk type duration in minutes: ")) Nothing
 
 renderConferenceAbstractTypes ::
-     Int64
+     ConferenceId
   -> [Entity AbstractType]
   -> Widget
   -> Handler Html
@@ -77,18 +83,18 @@ renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget 
           <li>#{renderAbstractType (entityVal abstractType)}
     |]
 
-getConferenceAbstractTypesR :: Int64 -> Handler Html
+getConferenceAbstractTypesR :: ConferenceId -> Handler Html
 getConferenceAbstractTypesR conferenceId = do
   (user, owner, account, conference) <-
-    requireOwnerForConference (toSqlKey conferenceId)
+    requireOwnerForConference conferenceId
   abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
   (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
   renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget
 
-postConferenceAbstractTypesR :: Int64 -> Handler Html
+postConferenceAbstractTypesR :: ConferenceId -> Handler Html
 postConferenceAbstractTypesR conferenceId = do
   (user, owner, account, conference) <-
-    requireOwnerForConference (toSqlKey conferenceId)
+    requireOwnerForConference conferenceId
   ((result, abstractTypeFormWidget), _) <- runFormPost abstractTypeForm
   case result of
     FormSuccess (AbstractTypeForm name duration) -> do
@@ -121,15 +127,15 @@ getConferencesR = do
 -- Conference Dashboard View
 --------------------------------------------------------------------------------
 
-getConferenceDashboardR :: Int64 -> Handler Html
+getConferenceDashboardR :: ConferenceId -> Handler Html
 getConferenceDashboardR confId = do
-  (_, confEntity) <- requireAdminForConference (toSqlKey confId)
-  let confName = conferenceName (entityVal confEntity)
+  (_, confEnt@(Entity _ conference)) <- requireAdminForConference confId
+  let confName = conferenceName conference
   baseLayout Nothing $ do
     setTitle (fromString (unpack confName))
     [whamlet|
 <article .grid-container>
-  ^{renderConferenceWidget confEntity}
+  ^{renderConferenceWidget confEnt}
   <div .medium-12 .cell>
     <h2>
       <a href=@{ConferenceCallForProposalsR confId}>
@@ -149,44 +155,62 @@ renderConferenceWidget confEntity =
   <p>#{desc}
 |]
   where
-    confId = fromSqlKey (entityKey confEntity)
+    confId = entityKey confEntity
     Conference _ name desc = entityVal confEntity
 
---------------------------------------------------------------------------------
--- CFP View
---------------------------------------------------------------------------------
 
-getConferenceCallForProposalsR :: Int64 -> Handler Html
+getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
-  (_, confEntity) <- requireAdminForConference (toSqlKey confId)
-  abstracts <- runDB (getAbstractsForConference (toSqlKey confId))
+  (_, confEntity) <- requireAdminForConference confId
+  abstracts <- runDB (getAbstractsForConference confId)
+  let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
+
   baseLayout Nothing $ do
     setTitle "Call for Proposals"
     [whamlet|
 <article .grid-container>
   <div .row>
-    <div .medium-12 .column>
+    <div .medium-9 .column>
       <h1>#{length abstracts} Abstract Submissions
   <div .row>
-    $forall abstractAndType <- abstracts
-      <div .medium-12 .column>
-        ^{renderAbstractRow abstractAndType}
+    <div .medium-9 .column>
+      ^{ct}
 |]
 
-renderAbstractRow :: (Entity Abstract, Entity AbstractType) -> Widget
-renderAbstractRow (abstract, abstractType) =
-  [whamlet|
-<div .row>
-  <div .medium-12>
-    <h3>#{title}
+colonnadeAbstracts :: ConferenceId
+                   -> Colonnade
+                      Headed
+                      (Entity Abstract, Entity AbstractType)
+                      (Cell App)
+colonnadeAbstracts confId =
+  mconcat [
+    headed "Title" (cell . titleF . fst)
+  , headed "Name" (textCell . abstractNameF . snd)
+  , headed "Content" (textCell . contentF . entityVal . fst)
+  ]
+  where titleF (Entity abstractK abstract) =
+          [whamlet|
+          <a href=@{ConferenceAbstractR confId abstractK}>
+            #{abstractTitle abstract}
+          |]
+        abstractNameF (Entity _ abstractType) =
+          abstractTypeName abstractType
+        contentF abstract =
+          (take 100
+            (fromMaybe
+             (abstractAuthorAbstract abstract)
+             (abstractEditedAbstract abstract)
+            ))
+
+getConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
+getConferenceAbstractR confId abstractId = do
+  (_, confEntity) <- requireAdminForConference confId
+  abstract <- runDBOr404 $ get abstractId
+  baseLayout Nothing $ do
+    setTitle "Abstract"
+    [whamlet|
+<article .grid-container>
   <div .row>
-    <div .medium-4 .column>
-      <h4> #{name} | #{renderTalkDuration duration}
-    <div .medium-8 .column>
-      <p>#{contentPreview}
+    <div .medium-9 .column>
+      <h1>#{abstractTitle abstract}
 |]
-  where
-    Abstract user title _ authorAbs meditedAbs = entityVal abstract
-    AbstractType _ name duration = entityVal abstractType
-
-    contentPreview = take 100 (fromMaybe authorAbs meditedAbs) <> "..."

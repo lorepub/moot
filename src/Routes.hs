@@ -18,12 +18,12 @@ mkYesodData "App" [parseRoutes|
 /contact    ContactR GET
 
 -- Admin
-/organizer/signup                 OrganizerSignupR GET POST
-/conferences                      ConferencesR GET
-/conference/#Int64                ConferenceDashboardR GET
-/conference/#Int64/abstract-types ConferenceAbstractTypesR GET POST
-/conference/#Int64/cfp            ConferenceCallForProposalsR GET
-
-/conference/#Int64/cfp/submit SubmitAbstractR GET POST
-/conference/#Int64/cfp/submitted SubmittedAbstractR GET
+/organizer/signup                                  OrganizerSignupR GET POST
+/conferences                                       ConferencesR GET
+/conference/#ConferenceId                          ConferenceDashboardR GET
+/conference/#ConferenceId/abstract-types           ConferenceAbstractTypesR GET POST
+/conference/#ConferenceId/cfp                      ConferenceCallForProposalsR GET
+/conference/#ConferenceId/cfp/submit               SubmitAbstractR GET POST
+/conference/#ConferenceId/cfp/submitted            SubmittedAbstractR GET
+/conference/#ConferenceId/abstract/#AbstractId     ConferenceAbstractR GET
 |]

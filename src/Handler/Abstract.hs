@@ -155,7 +155,7 @@ abstractForm abstractTypes = do
       <*> areq (selectFieldList abstractTypeList)
                (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
-renderSubmitAbstract :: Int64
+renderSubmitAbstract :: ConferenceId
                      -> Widget
                      -> Handler Html
 renderSubmitAbstract confId submitAbstractForm =
@@ -169,15 +169,14 @@ renderSubmitAbstract confId submitAbstractForm =
         <input .button type="submit" value="Submit abstract">
 |]
 
-getSubmitAbstractR :: Int64 -> Handler Html
+getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
-  abstractTypes <- runDB $ getAbstractTypes (toSqlKey conferenceId)
+  abstractTypes <- runDB $ getAbstractTypes conferenceId
   (widget, _) <- generateFormPost (abstractForm abstractTypes)
   renderSubmitAbstract conferenceId widget
 
-postSubmitAbstractR :: Int64 -> Handler Html
-postSubmitAbstractR conferenceId = do
-  let confId :: ConferenceId = toSqlKey conferenceId
+postSubmitAbstractR :: ConferenceId -> Handler Html
+postSubmitAbstractR confId = do
   abstractTypes <- runDBOr404 $ do
     maybeConf <- getConference confId
     case maybeConf of
@@ -201,14 +200,12 @@ postSubmitAbstractR conferenceId = do
                  (entityKey user)
                  title abstractTypeId
                  (unTextarea body) Nothing)
-        redirect (SubmittedAbstractR conferenceId)
-    _ -> renderSubmitAbstract conferenceId widget
+        redirect (SubmittedAbstractR confId)
+    _ -> renderSubmitAbstract confId widget
 
-getSubmittedAbstractR :: Int64 -> Handler Html
+getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do
-  let confK :: ConferenceId
-      confK = toSqlKey confId
-  _ <- runDBOr404 $ get confK
+  _ <- runDBOr404 $ get confId
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
