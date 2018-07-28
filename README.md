@@ -15,6 +15,9 @@ I'll ([Chris](https://github.com/bitemyapp)) be doing the heavy lifting but I'd 
 
 The easiest way to contact me is to send a message to the email address [on my GitHub profile](https://github.com/bitemyapp).
 
+### Current milestone
+
+[The current milestone is for CFP functionality](https://github.com/lorepub/moot/milestone/1). Some of the CFP milestone is general functionality needed for CFP features to be complete.
 
 ## Database Setup
 
