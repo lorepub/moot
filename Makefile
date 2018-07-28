@@ -72,10 +72,30 @@ destroy-create-db: drop-databases
 	sudo -u postgres createdb -O moot moot_dev
 	sudo -u postgres createdb -O moot moot_test
 
+# These variants should behave themselves better on Mac and Windows. You
+# might need to setup a pgpass.conf for automatic authentication
+# since you're not using sudo.
+drop-databases-mac-windows:
+	-dropdb -U postgres moot_dev
+	-dropdb -U postgres moot_test
+
+create-db-user-mac-windows: drop-databases-mac-windows
+	-dropuser -U postgres moot
+	bash ./scripts/create-db-users.sh
+
+destroy-create-db-mac-windows: drop-databases-mac-windows
+	createdb -U postgres -O moot moot_dev
+	createdb -U postgres -O moot moot_test
+
 recreate-db: create-db-user destroy-create-db
+
+recreate-db-mac-windows: create-db-user-mac-windows destroy-create-db-mac-windows
 
 psql:
 	sudo -u postgres psql moot_dev
+
+psql-mac-windows:
+	psql -U postgres moot_dev
 
 migration: build
 	stack exec -- migration
