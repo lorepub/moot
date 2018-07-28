@@ -98,13 +98,11 @@ makeAbstractType abstractTypeConference
                  abstractTypeName =
   insertEntity AbstractType{..}
 
-makeAbstract :: ConferenceId
-             -> UserId
+makeAbstract :: UserId
              -> AbstractTypeId
              -> Text
              -> DB (Entity Abstract)
-makeAbstract abstractConference abstractUser
-             abstractAbstractType abstractTitle = do
+makeAbstract abstractUser abstractAbstractType abstractTitle = do
   let abstractAuthorAbstract = "my abstract body"
       abstractEditedAbstract = Nothing
   insertEntity Abstract{..}
@@ -141,18 +139,22 @@ insertFixtures = do
 
   let goldilocksAbstractType = unsafeIdx allAbstractTypesF 0
       goldilocksAbstractTypeK = entityKey goldilocksAbstractType
-      -- crispAbstractType = unsafeIdx allAbstractTypesF 1
-      -- crispAbstractTypeK = entityKey crispAbstractType
+      crispAbstractType = unsafeIdx allAbstractTypesF 1
+      crispAbstractTypeK = entityKey crispAbstractType
       theThingAbstractType = unsafeIdx allAbstractTypesF 2
       theThingAbstractTypeK = entityKey theThingAbstractType
 
   allAbstractsF <-
-    traverse (uncurry $ makeAbstract chrisFirstConfK waddlesUserK)
+    traverse (uncurry $ makeAbstract waddlesUserK)
       [ ( theThingAbstractTypeK
         , "zygohistomorphic prepromorphisms and their malcontents"
         )
+      , ( crispAbstractTypeK
+        , "crispy potato chips and their manifold destiny"
+        )
       , ( goldilocksAbstractTypeK
-        , "Bananas, Lenses and Barbreh Strysend" )
+        , "Bananas, Lenses and Barbreh Strysend"
+        )
       ]
 
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF

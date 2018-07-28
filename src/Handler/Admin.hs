@@ -77,10 +77,6 @@ renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget 
           <li>#{renderAbstractType (entityVal abstractType)}
     |]
 
-getAbstractTypes :: ConferenceId -> DB [Entity AbstractType]
-getAbstractTypes conferenceId =
-  getRecsByField AbstractTypeConference conferenceId
-
 getConferenceAbstractTypesR :: Int64 -> Handler Html
 getConferenceAbstractTypesR conferenceId = do
   (user, owner, account, conference) <-
@@ -104,7 +100,7 @@ postConferenceAbstractTypesR conferenceId = do
 
 getConferencesR :: Handler Html
 getConferencesR = do
-  (user, owner, account) <- requireAccount
+  (user, account) <- requireAccount
   conferences <- runDB $ getConferencesByAccount (entityKey account)
   baseLayout Nothing $ do
     setTitle "My Conferences"
@@ -121,46 +117,76 @@ getConferencesR = do
         ^{renderConferenceWidget conf}
 |]
 
+--------------------------------------------------------------------------------
+-- Conference Dashboard View
+--------------------------------------------------------------------------------
+
 getConferenceDashboardR :: Int64 -> Handler Html
 getConferenceDashboardR confId = do
-  (_, _, confAcc) <- requireAccount
-  (Conference _ name desc) <- do
-    mConference <- runDB $ fmap entityVal <$> getConference (toSqlKey confId)
-    case mConference of
-      Nothing -> do
-        $logWarn "No conference with the specified Id"
-        notFound
-      Just conf
-        | conferenceAccount conf == entityKey confAcc -> pure conf
-        | otherwise -> do
-            let errMsg = "Current account of user is not the owner of this conference"
-            $logWarn errMsg
-            permissionDenied errMsg
+  (_, confEntity) <- requireAdminForConference (toSqlKey confId)
+  let confName = conferenceName (entityVal confEntity)
   baseLayout Nothing $ do
-    setTitle (fromString (unpack name))
+    setTitle (fromString (unpack confName))
     [whamlet|
 <article .grid-container>
+  ^{renderConferenceWidget confEntity}
   <div .medium-12 .cell>
-    <h1>#{name}
-  <div .medium-12 .cell>
-    <p>#{desc}
-  <div .medium-12 .cell>
-    <h1>
+    <h2>
+      <a href=@{ConferenceCallForProposalsR confId}>
+        Call For Proposals
+    <h2>
       <a href="@{ConferenceAbstractTypesR confId}">
         Abstract types
 |]
-
-renderConferenceDashboardWidget :: Conference -> Widget
-renderConferenceDashboardWidget conf = undefined
 
 renderConferenceWidget :: Entity Conference -> Widget
 renderConferenceWidget confEntity =
   [whamlet|
 <div .medium-12 .cell>
   <a href=@{ConferenceDashboardR confId}>
-    <h3>#{name}
-  <p>#{desc'}
+    <h1>#{name}
+<div .medium-12 .cell>
+  <p>#{desc}
 |]
   where
     confId = fromSqlKey (entityKey confEntity)
-    Conference _ name desc' = entityVal confEntity
+    Conference _ name desc = entityVal confEntity
+
+--------------------------------------------------------------------------------
+-- CFP View
+--------------------------------------------------------------------------------
+
+getConferenceCallForProposalsR :: Int64 -> Handler Html
+getConferenceCallForProposalsR confId = do
+  (_, confEntity) <- requireAdminForConference (toSqlKey confId)
+  abstracts <- runDB (getAbstractsForConference (toSqlKey confId))
+  baseLayout Nothing $ do
+    setTitle "Call for Proposals"
+    [whamlet|
+<article .grid-container>
+  <div .row>
+    <div .medium-12 .column>
+      <h1>#{length abstracts} Abstract Submissions
+  <div .row>
+    $forall abstractAndType <- abstracts
+      <div .medium-12 .column>
+        ^{renderAbstractRow abstractAndType}
+|]
+
+renderAbstractRow :: (Entity Abstract, Entity AbstractType) -> Widget
+renderAbstractRow (abstract, abstractType) =
+  [whamlet|
+<div .row>
+  <div .medium-12>
+    <h3>#{title}
+  <div .row>
+    <div .medium-4 .column>
+      <h4> #{name} | #{renderTalkDuration duration}
+    <div .medium-8 .column>
+      <p>#{contentPreview}
+|]
+  where
+    Abstract user title _ authorAbs meditedAbs = entityVal abstract
+    AbstractType _ name duration = entityVal abstractType
+
+    contentPreview = take 100 (fromMaybe authorAbs meditedAbs) <> "..."

@@ -131,7 +131,7 @@ renderAbstractTypeDropdown (Entity abstractTypeK abstractType) =
       prettyAbstractLabel =
         renderAbstractType abstractType
         -- [st|#{abstractTypeName abstractType} (#{durationLabel})|]
-  in (prettyAbstractLabel, abstractTypeK) 
+  in (prettyAbstractLabel, abstractTypeK)
 
 abstractForm :: [Entity AbstractType] -> Form SubmittedAbstract
 abstractForm abstractTypes = do
@@ -171,19 +171,19 @@ renderSubmitAbstract confId submitAbstractForm =
 
 getSubmitAbstractR :: Int64 -> Handler Html
 getSubmitAbstractR conferenceId = do
-  abstractTypes <- runDB $ abstractTypesForConference (toSqlKey conferenceId)
+  abstractTypes <- runDB $ getAbstractTypes (toSqlKey conferenceId)
   (widget, _) <- generateFormPost (abstractForm abstractTypes)
   renderSubmitAbstract conferenceId widget
 
 postSubmitAbstractR :: Int64 -> Handler Html
 postSubmitAbstractR conferenceId = do
-  let confK = toSqlKey conferenceId
+  let confId :: ConferenceId = toSqlKey conferenceId
   abstractTypes <- runDBOr404 $ do
-    maybeConf <- get confK
+    maybeConf <- getConference confId
     case maybeConf of
       Nothing -> return Nothing
       (Just _) -> do
-        fmap Just $ abstractTypesForConference confK
+        fmap Just $ getAbstractTypes confId
 
   ((result, widget), _) <- runFormPost (abstractForm abstractTypes)
   case result of
@@ -198,7 +198,7 @@ postSubmitAbstractR conferenceId = do
             (Just _) -> do
               insert
                 (Abstract
-                 confK (entityKey user)
+                 (entityKey user)
                  title abstractTypeId
                  (unTextarea body) Nothing)
         redirect (SubmittedAbstractR conferenceId)
