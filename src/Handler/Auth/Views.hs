@@ -65,15 +65,15 @@ renderForgot widget formErrors = do
           <input .button type="submit" value="Submit">
 |]
 
-renderReset :: Widget -> Token -> [Text] -> Handler Html
-renderReset widget token formErrors = do
+renderReset :: Widget -> [Text] -> Handler Html
+renderReset widget formErrors = do
   baseLayout Nothing $ do
     setTitle "Reset Password"
     mediumContainer $ [whamlet|
       <h1>Reset Password
       ^{formErrorWidget formErrors}
       <div>
-        <form method="POST" action="@{ResetR token}">
+        <form method="POST" action="@{ResetR}">
           ^{widget}
           <input .button type="submit" value="Submit">
 |]

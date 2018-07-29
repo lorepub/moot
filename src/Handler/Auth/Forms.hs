@@ -31,12 +31,14 @@ forgotForm =
 data ResetForm = ResetForm {
     resetPassword :: Text
   , resetConfirm  :: Text
+  , resetTokenVal :: Token
   }
 
-resetForm :: Form ResetForm
-resetForm =
+resetForm :: Maybe Token -> Form ResetForm
+resetForm maybeToken =
   renderDivs $
     ResetForm
       <$> areq passwordField (named "password" (placeheld "Password: ")) Nothing
       <*> areq passwordField (named "confirm" (placeheld "Confirm: ")) Nothing
+      <*> areq hiddenField   (named "token" "") maybeToken
 

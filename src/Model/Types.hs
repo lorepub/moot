@@ -59,7 +59,7 @@ newtype PasswordText =
 
 newtype Token =
   Token { tokenText :: Text }
-  deriving (Eq, Show, Read, PathPiece, PersistField, PersistFieldSql)
+  deriving (Eq, Show, PathPiece, PersistField, PersistFieldSql)
 
 newtype Minutes =
   Minutes { unMinutes :: Word64 }

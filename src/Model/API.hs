@@ -14,7 +14,7 @@ import Model as Export
 import Data.Time.Clock
 import Data.UUID (toByteString)
 import Data.UUID.V4 (nextRandom)
-import qualified Data.ByteString.Base16 as B16 (encode)
+import qualified Data.ByteString.Base64 as B64 (encode)
 import qualified Database.Persist as P
 
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
@@ -188,7 +188,7 @@ resetUserPassword token newPassword = do
 createReset :: UserId -> DB (Entity Reset)
 createReset userKey = do
   time  <- liftIO getCurrentTime
-  token <- liftIO $ decodeUtf8 . B16.encode . toStrict . toByteString <$> nextRandom 
+  token <- liftIO $ decodeUtf8 . B64.encode . toStrict . toByteString <$> nextRandom 
   reset <- insertEntity $ Reset (Token token) time userKey
   return reset
 
