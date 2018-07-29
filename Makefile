@@ -25,7 +25,7 @@ frontend-watch:
 	cd frontend && npm start
 
 backend-deps:
-	$(stack) install yesod-bin
+	$(stack) install yesod-bin alex happy
 
 frontend-deps:
 	cd frontend && npm install
