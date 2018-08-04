@@ -95,7 +95,6 @@ Abstract sql=abstracts
   authorAbstract Text
   editedAbstract Text Maybe
   deriving Eq Show
-
 |]
 
 dumpMigration :: DB ()

@@ -202,15 +202,40 @@ colonnadeAbstracts confId =
              (abstractEditedAbstract abstract)
             ))
 
+data EditedAbstract =
+  EditedAbstract {
+    newAbstractTitle :: Text
+  , newAbstractBody :: Textarea
+  } deriving (Eq, Show)
+
+abstractEditForm :: Maybe Text -> Maybe Textarea -> Form EditedAbstract
+abstractEditForm editedTitle editedBody = do
+  renderDivs $
+      EditedAbstract
+      <$> areq textField (named "abstract-title"
+                          (placeheld "Abstract title:")) editedTitle
+      <*> areq textareaField (named "abstract-body"
+                              (placeheld "Abstract proposal:")) editedBody
+
 getConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
 getConferenceAbstractR confId abstractId = do
-  (_, confEntity) <- requireAdminForConference confId
-  abstract <- runDBOr404 $ get abstractId
+  (_, Entity _ conference) <- requireAdminForConference confId
+  Abstract{..} <- runDBOr404 $ get abstractId
+  (widget, enctype) <-
+    generateFormPost
+      (abstractEditForm (Just abstractTitle) (Textarea <$> abstractEditedAbstract))
   baseLayout Nothing $ do
     setTitle "Abstract"
     [whamlet|
 <article .grid-container>
   <div .row>
     <div .medium-9 .column>
-      <h1>#{abstractTitle abstract}
+      <h1>Editing abstract #{tshow (fromSqlKey abstractId)}
+      <h3>Conference: #{conferenceName conference}
+      <label>Title: #{abstractTitle}
+      <label>Speaker-submitted abstract:
+        <pre>#{abstractAuthorAbstract}
+      <form method=POST enctype=#{enctype} action=/>
+        ^{widget}
+        <input .button type="submit" value="Submit abstract">
 |]

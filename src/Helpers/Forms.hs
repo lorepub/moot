@@ -39,3 +39,49 @@ emailField' =
   where
     mungeError (Left a) = Left $ T.pack a
     mungeError (Right a) = Right a
+
+-- <form>
+--   <div class="grid-container">
+--     <div class="grid-x grid-padding-x">
+--       <div class="medium-6 cell">
+--         <label>Input Label
+--           <input type="text" placeholder=".medium-6.cell">
+--         </label>
+--       </div>
+--       <div class="medium-6 cell">
+--         <label>Input Label
+--           <input type="text" placeholder=".medium-6.cell">
+--         </label>
+--       </div>
+--     </div>
+--   </div>
+-- </form>
+
+renderCard :: Monad m => Text -> FormRender m a
+renderCard buttonMsg aform fragment = do
+    (res, views') <- aFormToForm aform
+    let views'' = views' []
+        hasError argView = isJust (fvErrors argView)
+    let widget = [whamlet|
+<div class="panel panel-store polo-blue">
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-xs-12">
+              \#{fragment}
+              $forall view'' <- views''
+                <div class="form-group">
+                  $if (hasError view'')
+                    <span.input-error>
+                      ^{fvLabel view''}
+                      ^{fvInput view''}
+                  $else
+                    ^{fvLabel view''}
+                    ^{fvInput view''}
+                  $maybe err <- fvErrors view''
+                    <small.form-error.is-visible>#{err}
+    <div class="panel-footer">
+            <div class="row text-center">
+                <div class="col-xs-12">
+                    <button class="btn btn-lg btn-primary btn-block" type="submit">#{buttonMsg}</button>
+                |]
+    return (res, widget)
