@@ -97,13 +97,21 @@ AbstractType sql=abstract_types
 
 Abstract sql=abstracts
   user UserId
-  title Text
+  authorTitle Text
   abstractType AbstractTypeId
   authorAbstract Markdown
   editedTitle Text Maybe
   editedAbstract Markdown Maybe
   deriving Eq Show
 |]
+
+abstractTitle :: Abstract -> Text
+abstractTitle abstract =
+  fromMaybe (abstractAuthorTitle abstract) (abstractEditedTitle abstract)
+
+abstractBody :: Abstract -> Markdown
+abstractBody abstract =
+  fromMaybe (abstractAuthorAbstract abstract) (abstractEditedAbstract abstract)
 
 dumpMigration :: DB ()
 dumpMigration = printMigration migrateAll

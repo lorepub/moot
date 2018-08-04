@@ -213,9 +213,12 @@ abstractEditForm editedTitle editedBody = do
   renderDivs $
       EditedAbstract
       <$> areq textField (named "abstract-title"
-                          (placeheld "Abstract title:")) editedTitle
+                          (placeheld "Abstract title:"))
+          editedTitle
       <*> areq textareaField (named "abstract-body"
-                              (placeheld "Abstract proposal:")) editedBody
+                              (rows "15"
+                               (placeheld "Abstract proposal:")))
+          editedBody
 
 conferenceAbstractView :: Entity Conference
                        -> Entity Abstract
@@ -223,7 +226,7 @@ conferenceAbstractView :: Entity Conference
                        -> Enctype
                        -> Handler Html
 conferenceAbstractView (Entity confId conference)
-  (Entity abstractId Abstract{..}) widget enctype = do
+  (Entity abstractId abstract@Abstract{..}) widget enctype = do
   abstractMarkdown <- renderMarkdown abstractAuthorAbstract
   abstractEditedMarkdown <-
     traverse renderMarkdown abstractEditedAbstract
@@ -237,7 +240,7 @@ conferenceAbstractView (Entity confId conference)
       <h3>Conference: #{conferenceName conference}
       <div.row.breathe>
         <div.column>
-          <label>Title: #{abstractTitle}
+          <label>Title: #{abstractTitle abstract}
       <div.row.breathe>
         <div.column>
           <label>Speaker-submitted abstract:
@@ -263,8 +266,9 @@ conferenceAbstractView (Entity confId conference)
 mkAbstractForm :: Abstract -> Form EditedAbstract
 mkAbstractForm abstract =
   abstractEditForm
-   (abstractEditedTitle abstract)
-   (Textarea . unMarkdown <$> abstractEditedAbstract abstract)
+   (Just $ abstractTitle abstract)
+   (Textarea . unMarkdown <$>
+    (Just $ abstractBody abstract))
 
 getConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
 getConferenceAbstractR confId abstractId = do

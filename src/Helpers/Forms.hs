@@ -23,6 +23,9 @@ placeholder t f = f { fsAttrs = ("placeholder", t) : fsAttrs f }
 placeheld :: Text -> FieldSettings master
 placeheld label = placeholder label ""
 
+rows :: Text -> FieldSettings master -> FieldSettings master
+rows r f = f { fsAttrs = ("rows", r) : fsAttrs f }
+
 emailFromField :: Text -> Either FormMessage EmailAddress
 emailFromField e =
     case TEV.validate (encodeUtf8 e) of

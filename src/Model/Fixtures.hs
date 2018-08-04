@@ -117,7 +117,7 @@ makeAbstract :: UserId
              -> AbstractTypeId
              -> Text
              -> DB (Entity Abstract)
-makeAbstract abstractUser abstractAbstractType abstractTitle = do
+makeAbstract abstractUser abstractAbstractType abstractAuthorTitle = do
   let abstractAuthorAbstract = markdownifiedAbstractBody
       abstractEditedTitle = Nothing
       abstractEditedAbstract = Nothing
