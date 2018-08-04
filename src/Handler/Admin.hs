@@ -285,9 +285,12 @@ postConferenceAbstractR confId abstractId = do
   ((result, widget), enctype) <-
     runFormPost
       (mkAbstractForm abstract)
-  let renderView = conferenceAbstractView (Entity confId conference) (Entity abstractId abstract) widget enctype
   case result of
     FormSuccess (EditedAbstract newTitle newBody) -> do
-      runDB $ updateAbstract abstractId newTitle (Markdown (unTextarea newBody))
-      renderView
-    _ -> renderView
+      let newBodyMd =
+            Markdown (unTextarea newBody)
+      runDB $ updateAbstract abstractId newTitle newBodyMd
+      let newAbstract =
+            abstract { abstractEditedTitle = Just newTitle, abstractEditedAbstract = Just newBodyMd }
+      conferenceAbstractView (Entity confId conference) (Entity abstractId newAbstract) widget enctype
+    _ -> conferenceAbstractView (Entity confId conference) (Entity abstractId abstract) widget enctype
