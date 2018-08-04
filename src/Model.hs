@@ -99,9 +99,9 @@ Abstract sql=abstracts
   user UserId
   title Text
   abstractType AbstractTypeId
-  authorAbstract Text
+  authorAbstract Markdown
   editedTitle Text Maybe
-  editedAbstract Text Maybe
+  editedAbstract Markdown Maybe
   deriving Eq Show
 |]
 

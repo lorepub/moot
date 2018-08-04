@@ -98,12 +98,27 @@ makeAbstractType abstractTypeConference
                  abstractTypeName =
   insertEntity AbstractType{..}
 
+markdownifiedAbstractBody :: Markdown
+markdownifiedAbstractBody = Markdown [st|
+# Bananas, Lenses and Barbreh Strysen
+
+```haskell
+conferenceAbstractView (Entity confId conference)
+  (Entity abstractId Abstract{..}) widget enctype = do
+  abstractMarkdown <- renderMarkdown abstractAuthorAbstract
+  abstractEditedMarkdown <-
+    traverse renderMarkdown abstractEditedAbstract
+```
+
+Edited abstract 2
+|]
+
 makeAbstract :: UserId
              -> AbstractTypeId
              -> Text
              -> DB (Entity Abstract)
 makeAbstract abstractUser abstractAbstractType abstractTitle = do
-  let abstractAuthorAbstract = "my abstract body"
+  let abstractAuthorAbstract = markdownifiedAbstractBody
       abstractEditedTitle = Nothing
       abstractEditedAbstract = Nothing
   insertEntity Abstract{..}

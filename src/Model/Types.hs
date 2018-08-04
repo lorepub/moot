@@ -3,9 +3,12 @@
 module Model.Types where
 
 import ClassyPrelude.Yesod
+
 import Data.Fixed
 import Database.Persist.Sql
+import qualified Helpers.Pandoc as Pandoc
 import Text.Email.Validate
+import Text.Pandoc.Error
 import Text.Shakespeare.Text
 
 type ControlIO m = (MonadIO m)
@@ -91,3 +94,20 @@ makeTalkDuration = TalkDuration . Minutes
 
 unpackTalkDuration :: TalkDuration -> Word64
 unpackTalkDuration = unMinutes . unTalkDuration
+
+newtype Markdown =
+  Markdown { unMarkdown :: Text }
+  deriving (Eq, Show, PersistField, PersistFieldSql)
+
+data PandocRenderingException =
+  PandocRenderingFailed PandocError Text
+  deriving Show
+
+instance Exception PandocRenderingException
+
+renderMarkdown :: MonadIO m => Markdown -> m Html
+renderMarkdown (Markdown md) = do
+  htmlE <- liftIO $ Pandoc.renderHtmlFromMarkdown md
+  case htmlE of
+    Left err -> throwIO (PandocRenderingFailed err md)
+    (Right html) -> return html

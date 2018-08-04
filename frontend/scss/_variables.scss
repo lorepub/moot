@@ -1,0 +1,37 @@
+$gray-base:             darken($p0237-c5-lemon-grass, 90%);
+$gray-darker:           lighten($gray-base, 5%);
+$gray-dark:             lighten($gray-base, 10%);
+$gray:                  lighten($gray-base, 33.5%);
+$gray-light:            lighten($gray-base, 46.7%);
+$gray-lighter:          lighten($gray-base, 93.5%);
+
+$brand-primary:         $p5488-c6-salt-box;
+$brand-success:         $p0237-c2-citron;
+$brand-info:            $p0237-c5-lemon-grass;
+$brand-warning:         $p0237-c4-laser;
+$brand-danger:          $p0237-c6-taupe;
+
+$border-radius-base:    4px;
+$border-radius-large:   8px;
+$border-radius-small:   2px;
+
+$jumbotron-color:       #fff;
+$jumbotron-bg:          $brand-primary;
+
+$font-family-sans-serif:  "PT Sans", Helvetica, Arial, sans-serif;
+$font-family-serif:       "Dosis", Helvetica, Arial, sans-serif;
+$font-family-monospace:   "Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace !default
+
+$font-size-base:          15px !default;
+$line-height-base:        1.333333333 !default; // 20/15
+
+$headings-font-family:    $font-family-serif;
+$headings-font-weight:    700;
+
+$screen-xs-landscape:     640px;
+$screen-xs-landscape-max: $screen-xs-landscape + 1;
+
+
+$navbar-default-color:    #fff;
+$navbar-default-bg:       transparent;
+$navbar-default-border:   transparent;

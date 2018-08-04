@@ -1,0 +1,104 @@
+table.sourceCode,
+tr.sourceCode,
+td.lineNumbers,
+td.sourceCode,
+table.sourceCode pre {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    vertical-align: baseline;
+    border: none;
+}
+
+code {
+    border: none;
+    background-color: inherit;
+    font-family: "Ubuntu Mono",Menlo,Consolas,"Liberation Mono",Courier,monospace;
+}
+
+code a {
+    color: inherit;
+    cursor: inherit;
+    background: inherit;
+    &:hover {
+        color: inherit;
+    }
+}
+
+pre.sourceCode {
+    margin: 1.5em 0;
+
+    font-size: $font-size-base * 1.1;
+
+    border: none;
+    background: lighten($p5022-c6-tiara, 17.5%);
+    border-left: 10px solid $p5022-c8-polo-blue;
+    padding-left: 30px;
+}
+
+td.lineNumbers {
+    border-right: 1px solid #AAAAAA;
+    text-align: right;
+    color: #AAAAAA;
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+td.sourceCode {
+    padding-left: 5px;
+}
+
+.sourceCode span.kw {
+    color: $p6089-c6-stiletto;
+    font-weight: bold;
+}
+
+.sourceCode span.dt {
+    color: $p6392-c1-citron;
+}
+
+.sourceCode span.dv {
+    color: $p6230-c6-olivine;
+}
+
+.sourceCode span.bn {
+    color: $p6230-c6-olivine;
+}
+
+.sourceCode span.fl {
+    color: $p6230-c6-olivine;
+}
+
+.sourceCode span.ch {
+    color: $p5488-c6-salt-box;
+}
+
+.sourceCode span.st {
+    color: $p5488-c6-salt-box;
+}
+
+.sourceCode span.co {
+    color: darken($p5022-c8-polo-blue, 20%);
+    font-style: italic;
+}
+
+.sourceCode span.ot {
+    color: $p6089-c6-stiletto;
+}
+
+.sourceCode span.al {
+    color: $p6089-c6-stiletto;
+    font-weight: bold;
+}
+
+.sourceCode span.fu {
+    color: $p5488-c8-viola;
+}
+
+.sourceCode span.re {
+}
+
+.sourceCode span.er {
+    color: $p6089-c6-stiletto;
+    font-weight: bold;
+}

@@ -197,7 +197,7 @@ colonnadeAbstracts confId =
           abstractTypeName abstractType
         contentF abstract =
           (take 100
-            (fromMaybe
+            (unMarkdown $ fromMaybe
              (abstractAuthorAbstract abstract)
              (abstractEditedAbstract abstract)
             ))
@@ -223,7 +223,10 @@ conferenceAbstractView :: Entity Conference
                        -> Enctype
                        -> Handler Html
 conferenceAbstractView (Entity confId conference)
-  (Entity abstractId Abstract{..}) widget enctype =
+  (Entity abstractId Abstract{..}) widget enctype = do
+  abstractMarkdown <- renderMarkdown abstractAuthorAbstract
+  abstractEditedMarkdown <-
+    traverse renderMarkdown abstractEditedAbstract
   baseLayout Nothing $ do
     setTitle "Abstract"
     [whamlet|
@@ -232,25 +235,43 @@ conferenceAbstractView (Entity confId conference)
     <div .medium-9 .column>
       <h1>Editing abstract #{tshow (fromSqlKey abstractId)}
       <h3>Conference: #{conferenceName conference}
-      <label>Title: #{abstractTitle}
-      <label>Speaker-submitted abstract:
-        <pre>#{abstractAuthorAbstract}
-      <form method=POST
-            enctype=#{enctype}
-            action=@{ConferenceAbstractR confId abstractId}>
-        ^{widget}
-        <input .button type="submit" value="Update abstract">
+      <div.row.breathe>
+        <div.column>
+          <label>Title: #{abstractTitle}
+      <div.row.breathe>
+        <div.column>
+          <label>Speaker-submitted abstract:
+          <div.callout>
+            #{abstractMarkdown}
+      $maybe editedMarkdown <- abstractEditedMarkdown
+        <div.row.breathe>
+          <div.column>
+            <label>Admin-edited abstract:
+            <div.callout>
+              #{editedMarkdown}
+      <div.row.breathe>
+        <div.column>
+          <form method=POST
+                enctype=#{enctype}
+                action=@{ConferenceAbstractR confId abstractId}>
+            ^{widget}
+            <input .button type="submit" value="Update abstract">
 |]
-  
+-- <div class="row small-up-2 medium-up-3 large-up-4">
+--   <div class="column column-block">
+
+mkAbstractForm :: Abstract -> Form EditedAbstract
+mkAbstractForm abstract =
+  abstractEditForm
+   (abstractEditedTitle abstract)
+   (Textarea . unMarkdown <$> abstractEditedAbstract abstract)
+
 getConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
 getConferenceAbstractR confId abstractId = do
   (_, Entity _ conference) <- requireAdminForConference confId
   abstract <- runDBOr404 $ get abstractId
   (widget, enctype) <-
-    generateFormPost
-      (abstractEditForm
-       (abstractEditedTitle abstract)
-       (Textarea <$> abstractEditedAbstract abstract))
+    generateFormPost (mkAbstractForm abstract)
   conferenceAbstractView (Entity confId conference) (Entity abstractId abstract) widget enctype
 
 postConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
@@ -259,12 +280,10 @@ postConferenceAbstractR confId abstractId = do
   abstract <- runDBOr404 $ get abstractId
   ((result, widget), enctype) <-
     runFormPost
-      (abstractEditForm
-       (abstractEditedTitle abstract)
-       (Textarea <$> abstractEditedAbstract abstract))
+      (mkAbstractForm abstract)
   let renderView = conferenceAbstractView (Entity confId conference) (Entity abstractId abstract) widget enctype
   case result of
     FormSuccess (EditedAbstract newTitle newBody) -> do
-      runDB $ updateAbstract abstractId newTitle newBody
+      runDB $ updateAbstract abstractId newTitle (Markdown (unTextarea newBody))
       renderView
     _ -> renderView

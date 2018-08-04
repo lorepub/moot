@@ -268,10 +268,10 @@ getAbstractsForConference conferenceId =
       where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
       pure (abstract, abstractType)
 
-updateAbstract :: AbstractId -> Text -> Textarea -> DB ()
+updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
 updateAbstract abstractId title body = do
   update $ \a -> do
      set a [ AbstractEditedTitle =. val (Just title)
-           , AbstractEditedAbstract =. val (Just (unTextarea body))
+           , AbstractEditedAbstract =. val (Just body)
            ]
      where_ (a ^. AbstractId ==. val abstractId)
