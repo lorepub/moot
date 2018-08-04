@@ -246,6 +246,7 @@ conferenceAbstractView (Entity confId conference)
           <label>Speaker-submitted abstract:
           <div.callout>
             #{abstractMarkdown}
+      <div #focus>
       $maybe editedMarkdown <- abstractEditedMarkdown
         <div.row.breathe>
           <div.column>
@@ -256,7 +257,7 @@ conferenceAbstractView (Entity confId conference)
         <div.column>
           <form method=POST
                 enctype=#{enctype}
-                action=@{ConferenceAbstractR confId abstractId}>
+                action=@{ConferenceAbstractR confId abstractId}#focus>
             ^{widget}
             <input .button type="submit" value="Update abstract">
 |]
