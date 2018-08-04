@@ -66,7 +66,7 @@ drop-databases:
 
 create-db-user: drop-databases
 	-sudo -u postgres dropuser moot
-	bash ./scripts/create-db-users.sh
+	sudo -u postgres bash ./scripts/create-db-users.sh
 
 destroy-create-db: drop-databases
 	sudo -u postgres createdb -O moot moot_dev
