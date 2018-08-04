@@ -170,8 +170,10 @@ getConferenceCallForProposalsR confId = do
     [whamlet|
 <article .grid-container>
   <div .row>
+    ^{renderConferenceWidget confEntity}
+  <div .row>
     <div .medium-9 .column>
-      <h1>#{length abstracts} Abstract Submissions
+      <h1>#{length abstracts} submitted abstracts
   <div .row>
     <div .medium-9 .column>
       ^{ct}
