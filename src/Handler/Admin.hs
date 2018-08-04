@@ -242,17 +242,23 @@ conferenceAbstractView (Entity confId conference)
       <h3>Conference: #{conferenceName conference}
       <div.row.breathe>
         <div.column>
-          <label>Title: #{abstractTitle abstract}
+          <label>Speaker-submitted title:
+          <h4>#{abstractAuthorTitle}
       <div.row.breathe>
         <div.column>
           <label>Speaker-submitted abstract:
           <div.callout>
             #{abstractMarkdown}
+      $maybe editedTitle <- abstractEditedTitle
+        <div.row.breathe>
+          <div.column>
+            <label>Edited title:
+            <h4>#{editedTitle}
       <div #focus>
       $maybe editedMarkdown <- abstractEditedMarkdown
         <div.row.breathe>
           <div.column>
-            <label>Admin-edited abstract:
+            <label>Edited abstract:
             <div.callout>
               #{editedMarkdown}
       <div.row.breathe>
