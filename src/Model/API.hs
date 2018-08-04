@@ -11,6 +11,12 @@ import Database.Esqueleto.Internal.Sql as Export (SqlQuery)
 
 import Model as Export
 
+import Data.Time.Clock
+import Data.UUID (toByteString)
+import Data.UUID.V4 (nextRandom)
+import qualified Data.ByteString.Base64 as B64 (encode)
+import qualified Database.Persist as P
+
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
 getOwnerForUser userId = getRecByField OwnerUser userId
 
@@ -157,6 +163,43 @@ createUser email pass = do
   hash <- liftIO $ hashPassword pass
   _ <- insert (Password hash userId)
   return (Entity userId newUser)
+
+getUserByResetToken :: Token -> DB (Maybe (Entity User))
+getUserByResetToken token =
+  selectFirst $
+  from $ \(r, u) -> do
+  where_ (r ^. ResetUser ==. u ^. UserId &&. r ^. ResetToken ==. val token)
+  return u
+
+getUserPasswordByResetToken :: Token -> DB (Maybe (Entity User, Entity Password))
+getUserPasswordByResetToken token =
+  selectFirst $
+  from $ \(r, u, p) -> do
+  where_ (r ^. ResetUser ==. u ^. UserId &&. p ^. PasswordUser ==. u ^. UserId &&. r ^. ResetToken ==. val token)
+  return (u, p)
+
+resetUserPassword :: Token -> Text -> DB ()
+resetUserPassword token newPassword = do
+  (Just (_, Entity passwordKey _)) <- getUserPasswordByResetToken token
+  newPasswordHash <- liftIO $ hashPassword newPassword
+  P.update passwordKey [PasswordHash P.=. newPasswordHash]
+  P.deleteBy $ UniqueToken token
+
+createReset :: UserId -> DB (Entity Reset)
+createReset userKey = do
+  time  <- liftIO getCurrentTime
+  token <- liftIO $ decodeUtf8 . B64.encode . toStrict . toByteString <$> nextRandom 
+  reset <- insertEntity $ Reset (Token token) time userKey
+  return reset
+
+deleteOldResets :: DB ()
+deleteOldResets = do
+  oneDayAgo <- liftIO $ addUTCTime (negate nominalDay) <$> getCurrentTime
+  deleteWhere [ResetCreatedAt P.<. oneDayAgo]
+
+deleteExistingResets :: UserId -> DB ()
+deleteExistingResets userId = do
+  deleteWhere [ResetUser P.==. userId]
 
 createOwner :: UserId -> DB (Entity Owner)
 createOwner userKey = do
