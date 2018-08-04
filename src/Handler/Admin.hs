@@ -280,8 +280,10 @@ getConferenceAbstractR confId abstractId = do
 
 postConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
 postConferenceAbstractR confId abstractId = do
-  (_, Entity _ conference) <- requireAdminForConference confId
-  abstract <- runDBOr404 $ get abstractId
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
+  abstract <-
+    runDBOr404 $ get abstractId
   ((result, widget), enctype) <-
     runFormPost
       (mkAbstractForm abstract)
@@ -291,6 +293,15 @@ postConferenceAbstractR confId abstractId = do
             Markdown (unTextarea newBody)
       runDB $ updateAbstract abstractId newTitle newBodyMd
       let newAbstract =
-            abstract { abstractEditedTitle = Just newTitle, abstractEditedAbstract = Just newBodyMd }
-      conferenceAbstractView (Entity confId conference) (Entity abstractId newAbstract) widget enctype
-    _ -> conferenceAbstractView (Entity confId conference) (Entity abstractId abstract) widget enctype
+            abstract { abstractEditedTitle = Just newTitle
+                     , abstractEditedAbstract = Just newBodyMd
+                     }
+      conferenceAbstractView
+        (Entity confId conference)
+        (Entity abstractId newAbstract)
+        widget enctype
+    _ ->
+      conferenceAbstractView
+        (Entity confId conference)
+        (Entity abstractId abstract)
+        widget enctype
