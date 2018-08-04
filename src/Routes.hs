@@ -27,5 +27,5 @@ mkYesodData "App" [parseRoutes|
 /conference/#ConferenceId/cfp                      ConferenceCallForProposalsR GET
 /conference/#ConferenceId/cfp/submit               SubmitAbstractR GET POST
 /conference/#ConferenceId/cfp/submitted            SubmittedAbstractR GET
-/conference/#ConferenceId/abstract/#AbstractId     ConferenceAbstractR GET
+/conference/#ConferenceId/abstract/#AbstractId     ConferenceAbstractR GET POST
 |]

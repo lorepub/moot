@@ -104,6 +104,7 @@ makeAbstract :: UserId
              -> DB (Entity Abstract)
 makeAbstract abstractUser abstractAbstractType abstractTitle = do
   let abstractAuthorAbstract = "my abstract body"
+      abstractEditedTitle = Nothing
       abstractEditedAbstract = Nothing
   insertEntity Abstract{..}
 
@@ -191,6 +192,9 @@ truncateAllTables = do
       error "List of tables is empty, something has gone wrong!"
     _ -> rawExecute query []
 
+runMigrationsUnsafe :: DB ()
+runMigrationsUnsafe = runMigrationUnsafe migrateAll
+
 wipeAndReinstallFixtures :: DB ()
 wipeAndReinstallFixtures = do
   truncateAllTables
@@ -199,10 +203,10 @@ wipeAndReinstallFixtures = do
 wipeAndMigrateDatabase :: DB ()
 wipeAndMigrateDatabase = do
   truncateAllTables
-  runMigrations
+  runMigrationsUnsafe
   void $ insertFixtures
 
 freshDatabase :: DB ()
 freshDatabase = do
-  runMigrations
+  runMigrationsUnsafe
   void $ insertFixtures

@@ -199,7 +199,7 @@ postSubmitAbstractR confId = do
                 (Abstract
                  (entityKey user)
                  title abstractTypeId
-                 (unTextarea body) Nothing)
+                 (unTextarea body) Nothing Nothing)
         redirect (SubmittedAbstractR confId)
     _ -> renderSubmitAbstract confId widget
 

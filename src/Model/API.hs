@@ -3,7 +3,7 @@ module Model.API
   , module Export
   ) where
 
-import ClassyPrelude.Yesod hiding ((==.), hash, on, selectFirst)
+import ClassyPrelude.Yesod hiding ((=.), (==.), hash, on, selectFirst, update)
 
 import Database.Esqueleto hiding (selectFirst)
 import Database.Esqueleto.Internal.Sql
@@ -267,3 +267,11 @@ getAbstractsForConference conferenceId =
       on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
       where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
       pure (abstract, abstractType)
+
+updateAbstract :: AbstractId -> Text -> Textarea -> DB ()
+updateAbstract abstractId title body = do
+  update $ \a -> do
+     set a [ AbstractEditedTitle =. val (Just title)
+           , AbstractEditedAbstract =. val (Just (unTextarea body))
+           ]
+     where_ (a ^. AbstractId ==. val abstractId)

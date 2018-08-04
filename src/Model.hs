@@ -100,6 +100,7 @@ Abstract sql=abstracts
   title Text
   abstractType AbstractTypeId
   authorAbstract Text
+  editedTitle Text Maybe
   editedAbstract Text Maybe
   deriving Eq Show
 |]
