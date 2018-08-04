@@ -269,8 +269,6 @@ conferenceAbstractView (Entity confId conference)
             ^{widget}
             <input .button type="submit" value="Update abstract">
 |]
--- <div class="row small-up-2 medium-up-3 large-up-4">
---   <div class="column column-block">
 
 mkAbstractForm :: Abstract -> Form EditedAbstract
 mkAbstractForm abstract =
@@ -281,7 +279,8 @@ mkAbstractForm abstract =
 
 getConferenceAbstractR :: ConferenceId -> AbstractId -> Handler Html
 getConferenceAbstractR confId abstractId = do
-  (_, Entity _ conference) <- requireAdminForConference confId
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
   abstract <- runDBOr404 $ get abstractId
   (widget, enctype) <-
     generateFormPost (mkAbstractForm abstract)
