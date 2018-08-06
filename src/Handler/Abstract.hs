@@ -116,12 +116,16 @@ import Helpers.Views
 
 data SubmittedAbstract =
   SubmittedAbstract {
-    submittedAbstractEmail :: Email
-  , submittedAbstractPassword :: Text
-  , submittedAbstractSpeaker :: Text
+    submittedAbstractSpeaker :: Text
   , submittedAbstractTitle :: Text
   , submittedAbstractBody :: Textarea
   , submittedAbstractType :: AbstractTypeId
+  } deriving Show
+
+data CreateAccount =
+  CreateAccount {
+    createAccountEmail :: Email
+  , createAccountPassword :: Text
   } deriving Show
 
 renderAbstractTypeDropdown :: Entity AbstractType -> (Text, AbstractTypeId)
@@ -141,12 +145,8 @@ abstractForm abstractTypes = do
         renderAbstractTypeDropdown
         abstractTypes
   renderDivs $
-      SubmittedAbstract
-      <$> areq emailField' (named "email"
-                           (placeheld "Email:")) Nothing
-      <*> areq passwordField (named "password"
-                              (placeheld "Password: ")) Nothing
-      <*> areq textField (named "speaker-name"
+    SubmittedAbstract
+      <$> areq textField (named "speaker-name"
                           (placeheld "Speaker's name:")) Nothing
       <*> areq textField (named "abstract-title"
                           (placeheld "Abstract title:")) Nothing
@@ -155,16 +155,27 @@ abstractForm abstractTypes = do
       <*> areq (selectFieldList abstractTypeList)
                (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
+createAccountForm :: Form CreateAccount
+createAccountForm =
+  renderDivs $
+    CreateAccount
+      <$> areq emailField' (named "email"
+                           (placeheld "Email:")) Nothing
+      <*> areq passwordField (named "password"
+                              (placeheld "Password: ")) Nothing
+
 renderSubmitAbstract :: ConferenceId
                      -> Widget
+                     -> Widget
                      -> Handler Html
-renderSubmitAbstract confId submitAbstractForm =
+renderSubmitAbstract confId submitAbstractForm createAccountForm =
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
     <div .medium-6 .cell>
       <form method="POST"
             action="@{SubmitAbstractR confId}">
+        ^{createAccountForm}
         ^{submitAbstractForm}
         <input .button type="submit" value="Submit abstract">
 |]
@@ -172,8 +183,26 @@ renderSubmitAbstract confId submitAbstractForm =
 getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
   abstractTypes <- runDB $ getAbstractTypes conferenceId
-  (widget, _) <- generateFormPost (abstractForm abstractTypes)
-  renderSubmitAbstract conferenceId widget
+  (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)
+  (accountWidget', _) <- generateFormPost createAccountForm
+  maybeUser <- getUser
+  let accountWidget = maybe accountWidget' (const $ return ()) maybeUser
+  renderSubmitAbstract conferenceId abstractWidget accountWidget
+
+handleCreateAccountOrLoggedIn :: Handler (Maybe (Entity User), Widget)
+handleCreateAccountOrLoggedIn = do
+  maybeUser <- getUser
+  ((acctData, widget), _) <- runFormPost createAccountForm
+  case maybeUser of
+    Just user ->
+      return $ (Just user, widget)
+    Nothing ->
+      case acctData of
+        FormSuccess
+          (CreateAccount email password) -> do
+            user <- runDB $ createUser email password
+            return $ (Just user, widget)
+        _ -> return $ (Nothing, widget)
 
 postSubmitAbstractR :: ConferenceId -> Handler Html
 postSubmitAbstractR confId = do
@@ -184,12 +213,14 @@ postSubmitAbstractR confId = do
       (Just _) -> do
         fmap Just $ getAbstractTypes confId
 
-  ((result, widget), _) <- runFormPost (abstractForm abstractTypes)
-  case result of
-    FormSuccess
-      (SubmittedAbstract email password name title body abstractTypeId) -> do
+  (maybeUser, createAccountWidget) <- handleCreateAccountOrLoggedIn
+  ((submittedAbstract, abstractWidget), _) <- runFormPost (abstractForm abstractTypes)
+
+  case (maybeUser, submittedAbstract) of
+    (Just user,
+     FormSuccess
+      (SubmittedAbstract name title body abstractTypeId)) -> do
         abstractKey <- runDB $ do
-          user <- createUser email password
           lift $ setUserSession (entityKey user) True
           maybeAbstractType <- get abstractTypeId
           case maybeAbstractType of
@@ -201,7 +232,7 @@ postSubmitAbstractR confId = do
                  title abstractTypeId
                  (Markdown (unTextarea body)) Nothing Nothing)
         redirect (SubmittedAbstractR confId)
-    _ -> renderSubmitAbstract confId widget
+    _ -> renderSubmitAbstract confId abstractWidget createAccountWidget
 
 getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do
