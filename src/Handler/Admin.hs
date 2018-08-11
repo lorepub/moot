@@ -158,7 +158,6 @@ renderConferenceWidget confEntity =
     confId = entityKey confEntity
     Conference _ name desc = entityVal confEntity
 
-
 getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId

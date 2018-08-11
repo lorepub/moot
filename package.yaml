@@ -71,6 +71,7 @@ dependencies:
 - transformers
 - time
 - unordered-containers
+- uri-encode
 - uuid
 - vector
 - wai
@@ -83,6 +84,7 @@ dependencies:
 - yesod-colonnade
 - yesod-core >=1.6 && <1.7
 - yesod-form >=1.6 && <1.7
+- yesod-paginator
 - yesod-persistent
 - yesod-static >=1.6 && <1.7
 

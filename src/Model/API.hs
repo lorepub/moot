@@ -6,6 +6,7 @@ module Model.API
 import ClassyPrelude.Yesod hiding ((=.), (==.), hash, on, selectFirst, update)
 
 import Database.Esqueleto hiding (selectFirst)
+import Database.Esqueleto.Internal.Language
 import Database.Esqueleto.Internal.Sql
 import Database.Esqueleto.Internal.Sql as Export (SqlQuery)
 
@@ -260,13 +261,25 @@ getAbstractTypes :: ConferenceId -> DB [Entity AbstractType]
 getAbstractTypes conferenceId =
   getRecsByField AbstractTypeConference conferenceId
 
-getAbstractsForConference :: ConferenceId -> DB [(Entity Abstract, Entity AbstractType)]
+getAbstractsForConference :: ConferenceId
+                          -> DB [(Entity Abstract, Entity AbstractType)]
 getAbstractsForConference conferenceId =
-  select $
-    from $ \(abstractType `InnerJoin` abstract) -> do
-      on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
-      where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
-      pure (abstract, abstractType)
+  select $ getAbstractsForConference' conferenceId
+
+-- getAbstractsForConference' :: ConferenceId
+--                            -> DB [(Entity Abstract, Entity AbstractType)]
+getAbstractsForConference' :: ( FromPreprocess
+                                query expr backend (expr (Entity AbstractType))
+                              , FromPreprocess
+                                query expr backend (expr (Entity Abstract)))
+                           => ConferenceId
+                           -> query ( expr (Entity Abstract)
+                                    , expr (Entity AbstractType))
+getAbstractsForConference' conferenceId =
+  from $ \(abstractType `InnerJoin` abstract) -> do
+    on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
+    where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
+    pure (abstract, abstractType)
 
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
 updateAbstract abstractId title body = do

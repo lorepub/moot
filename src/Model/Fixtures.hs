@@ -143,15 +143,24 @@ insertFixtures = do
 
   let chrisFirstConf = unsafeIdx chrisConferencesF 0
       chrisFirstConfK = entityKey chrisFirstConf
+      chrisSecondConf = unsafeIdx chrisConferencesF 1
+      chrisSecondConfK = entityKey chrisSecondConf
       shortTalkDur = TalkDuration (Minutes 15)
       defaultTalkDur = TalkDuration (Minutes 60)
       longTalkDur = TalkDuration (Minutes 120)
-  allAbstractTypesF <-
+
+  firstConfAbstractTypesF <-
     traverse (uncurry $ makeAbstractType chrisFirstConfK)
     [ ( defaultTalkDur, "Goldilocks" )
     , ( shortTalkDur, "Crisp" )
     , ( longTalkDur, "The Thing" )
     ]
+  secondConfAbstractTypesF <-
+    traverse (uncurry $ makeAbstractType chrisSecondConfK)
+    [ ( defaultTalkDur, "Spam!" )
+    ]
+  let allAbstractTypesF =
+        firstConfAbstractTypesF <> secondConfAbstractTypesF
 
   let goldilocksAbstractType = unsafeIdx allAbstractTypesF 0
       goldilocksAbstractTypeK = entityKey goldilocksAbstractType
@@ -159,8 +168,10 @@ insertFixtures = do
       crispAbstractTypeK = entityKey crispAbstractType
       theThingAbstractType = unsafeIdx allAbstractTypesF 2
       theThingAbstractTypeK = entityKey theThingAbstractType
+      secondConfSpamAbstractType = unsafeIdx secondConfAbstractTypesF 0
+      secondConfSpamAbstractTypeK = entityKey secondConfSpamAbstractType
 
-  allAbstractsF <-
+  chrisConfAbstracts <-
     traverse (uncurry $ makeAbstract waddlesUserK)
       [ ( theThingAbstractTypeK
         , "zygohistomorphic prepromorphisms and their malcontents"
@@ -172,6 +183,15 @@ insertFixtures = do
         , "Bananas, Lenses and Barbreh Strysend"
         )
       ]
+
+  secondConfSpamAbstracts <-
+    replicateM 750 (makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Spam spam spam!")
+
+  secondConfUniqueAbstract <-
+    makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique"
+
+  let allAbstractsF =
+        chrisConfAbstracts <> [secondConfUniqueAbstract] <> secondConfSpamAbstracts
 
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF
       userF = UserFixtures {..}
