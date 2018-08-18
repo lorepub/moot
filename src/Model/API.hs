@@ -266,8 +266,6 @@ getAbstractsForConference :: ConferenceId
 getAbstractsForConference conferenceId =
   select $ getAbstractsForConference' conferenceId
 
--- getAbstractsForConference' :: ConferenceId
---                            -> DB [(Entity Abstract, Entity AbstractType)]
 getAbstractsForConference' :: ( FromPreprocess
                                 query expr backend (expr (Entity AbstractType))
                               , FromPreprocess
@@ -276,9 +274,24 @@ getAbstractsForConference' :: ( FromPreprocess
                            -> query ( expr (Entity Abstract)
                                     , expr (Entity AbstractType))
 getAbstractsForConference' conferenceId =
+  getAbstractsForConference'' (\_ _ -> return ()) conferenceId
+
+getAbstractsForConference'' :: ( FromPreprocess
+                                 query expr backend (expr (Entity AbstractType))
+                               , FromPreprocess
+                                 query expr backend (expr (Entity Abstract)))
+                            => ( expr (Entity AbstractType)
+                              -> expr (Entity Abstract)
+                              -> query ()
+                               )
+                            -> ConferenceId
+                            -> query ( expr (Entity Abstract)
+                                     , expr (Entity AbstractType))
+getAbstractsForConference'' constraints conferenceId =
   from $ \(abstractType `InnerJoin` abstract) -> do
     on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
     where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
+    constraints abstractType abstract
     pure (abstract, abstractType)
 
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()

@@ -88,3 +88,12 @@ renderCard buttonMsg aform fragment = do
                     <button class="btn btn-lg btn-primary btn-block" type="submit">#{buttonMsg}</button>
                 |]
     return (res, widget)
+
+renderAbstractTypeDropdown :: Entity AbstractType -> (Text, AbstractTypeId)
+renderAbstractTypeDropdown (Entity abstractTypeK abstractType) =
+  let -- durationLabel =
+      --   abstractTypeDuration abstractType
+      prettyAbstractLabel =
+        renderAbstractType abstractType
+        -- [st|#{abstractTypeName abstractType} (#{durationLabel})|]
+  in (prettyAbstractLabel, abstractTypeK)

@@ -128,15 +128,6 @@ data CreateAccount =
   , createAccountPassword :: Text
   } deriving Show
 
-renderAbstractTypeDropdown :: Entity AbstractType -> (Text, AbstractTypeId)
-renderAbstractTypeDropdown (Entity abstractTypeK abstractType) =
-  let -- durationLabel =
-      --   abstractTypeDuration abstractType
-      prettyAbstractLabel =
-        renderAbstractType abstractType
-        -- [st|#{abstractTypeName abstractType} (#{durationLabel})|]
-  in (prettyAbstractLabel, abstractTypeK)
-
 abstractForm :: [Entity AbstractType] -> Form SubmittedAbstract
 abstractForm abstractTypes = do
   let abstractTypeList :: [(Text, AbstractTypeId)]
