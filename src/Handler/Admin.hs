@@ -159,12 +159,71 @@ renderConferenceWidget confEntity =
     confId = entityKey confEntity
     Conference _ name desc = entityVal confEntity
 
+data CfpFilterForm =
+  CfpFilterForm {
+    filterAbstractTitle :: Maybe Text
+  , filterAbstractType :: Maybe AbstractTypeId
+  } deriving Show
+
+cfpFilterForm :: [Entity AbstractType] -> Form CfpFilterForm
+cfpFilterForm abstractTypes = do
+  let abstractTypeList :: [(Text, AbstractTypeId)]
+      abstractTypeList =
+        map
+        renderAbstractTypeDropdown
+        abstractTypes
+  renderDivs $
+        CfpFilterForm
+    <$> aopt textField (named "abstract-title"
+                        (placeheld "CFP Title: ")) Nothing
+    <*> aopt (selectFieldList abstractTypeList)
+             (named "abstract-type" (placeheld "Abstract type:")) Nothing
+
+dummyCfpFilterForm = CfpFilterForm Nothing Nothing
+
+ilikeVal :: ( SqlString s
+            , PersistEntity val
+            , Esqueleto query expr backend
+            )
+         => expr (Entity val)
+         -> EntityField val s
+         -> s
+         -> expr (Value Bool)
+ilikeVal ref col v =
+  (ref ^. col `ilike` (%) ++. val v ++. (%))
+
+genFilterConstraints :: (Esqueleto query expr backend)
+                     => CfpFilterForm
+                     -> expr (Entity AbstractType)
+                     -> expr (Entity Abstract)
+                     -> query ()
+genFilterConstraints CfpFilterForm{..} abstractType abstract = do
+  case filterAbstractTitle of
+    Nothing -> return ()
+    (Just "") -> return ()
+    (Just title) -> where_ $ ilikeVal abstract AbstractAuthorTitle title
+  case filterAbstractType of
+    Nothing -> return ()
+    (Just abstractTypeKey) ->
+      where_ $ abstractType ^. AbstractTypeId
+               ==. val abstractTypeKey
+
 getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId
-  abstractList <- runDB (getAbstractsForConference confId)
+  abstractTypes <- runDB $ getAbstractTypes confId
+  ((cfpFilterFR, filterWidget), _) <- runFormGet (cfpFilterForm abstractTypes)
+  cfpFilterF <- case cfpFilterFR of
+    FormSuccess cfpFilterF -> return cfpFilterF
+    _ -> return dummyCfpFilterForm
+
+  let filters abstractType abstract =
+        genFilterConstraints cfpFilterF abstractType abstract
+      getAbstracts =
+        select $
+          getAbstractsForConference'' filters confId
+  abstractList <- runDB getAbstracts
   abstractPages <- Page.paginate 20 abstractList
-  -- abstractPages <- runDB $ selectPaginated' 20 1 (getAbstractsForConference' confId)
   let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
       pages = Page.simple 20 abstractPages
@@ -175,8 +234,12 @@ getConferenceCallForProposalsR confId = do
   <div .row>
     ^{renderConferenceWidget confEntity}
   <div .row>
+    <form method="GET" action="@{ConferenceCallForProposalsR confId}">
+      ^{filterWidget}
+      <input .button type="submit" value="Filter">
+  <div .row>
     <div .medium-9 .column>
-      <h1>#{length abstracts} submitted abstracts
+      <h1>#{length abstractList} abstracts matching filters
   <div .row>
     <div .medium-9 .column>
       ^{ct}
