@@ -221,7 +221,9 @@ postSubmitAbstractR confId = do
                 (Abstract
                  (entityKey user)
                  title abstractTypeId
-                 (Markdown (unTextarea body)) Nothing Nothing)
+                 (Markdown (unTextarea body)) Nothing Nothing
+                 False
+                )
         redirect (SubmittedAbstractR confId)
     _ -> renderSubmitAbstract confId abstractWidget createAccountWidget
 

@@ -102,6 +102,7 @@ Abstract sql=abstracts
   authorAbstract Markdown
   editedTitle Text Maybe
   editedAbstract Markdown Maybe
+  blocked Bool
   deriving Eq Show
 |]
 

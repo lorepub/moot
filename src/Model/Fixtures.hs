@@ -113,15 +113,23 @@ conferenceAbstractView (Entity confId conference)
 Edited abstract 2
 |]
 
+makeAbstract' :: UserId
+              -> AbstractTypeId
+              -> Text
+              -> Abstract
+makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle =
+  let abstractAuthorAbstract = markdownifiedAbstractBody
+      abstractEditedTitle = Nothing
+      abstractEditedAbstract = Nothing
+      abstractBlocked = False
+  in Abstract{..}
+
 makeAbstract :: UserId
              -> AbstractTypeId
              -> Text
              -> DB (Entity Abstract)
-makeAbstract abstractUser abstractAbstractType abstractAuthorTitle = do
-  let abstractAuthorAbstract = markdownifiedAbstractBody
-      abstractEditedTitle = Nothing
-      abstractEditedAbstract = Nothing
-  insertEntity Abstract{..}
+makeAbstract abstractUser abstractAbstractType abstractAuthorTitle =
+  insertEntity $ makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle
 
 insertFixtures :: DB Fixtures
 insertFixtures = do
@@ -190,8 +198,17 @@ insertFixtures = do
   secondConfUniqueAbstract <-
     makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique"
 
+  let secondConfBlockedAbstract' =
+        makeAbstract' waddlesUserK secondConfSpamAbstractTypeK "This was blocked"
+  secondConfBlockedAbstract <-
+    insertEntity (secondConfBlockedAbstract' { abstractBlocked = True } )
+
   let allAbstractsF =
-        chrisConfAbstracts <> [secondConfUniqueAbstract] <> secondConfSpamAbstracts
+           chrisConfAbstracts
+        <> [ secondConfUniqueAbstract
+           , secondConfBlockedAbstract
+           ]
+        <> secondConfSpamAbstracts
 
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF
       userF = UserFixtures {..}
