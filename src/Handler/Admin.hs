@@ -6,6 +6,7 @@ import Colonnade hiding (fromMaybe)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as HA
 import Yesod.Colonnade
+import qualified Yesod.Paginator as Page
 
 import Handler.Auth
 import Helpers.Forms
@@ -161,9 +162,12 @@ renderConferenceWidget confEntity =
 getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId
-  abstracts <- runDB (getAbstractsForConference confId)
+  abstractList <- runDB (getAbstractsForConference confId)
+  abstractPages <- Page.paginate 20 abstractList
+  -- abstractPages <- runDB $ selectPaginated' 20 1 (getAbstractsForConference' confId)
+  let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
-
+      pages = Page.simple 20 abstractPages
   baseLayout Nothing $ do
     setTitle "Call for Proposals"
     [whamlet|
@@ -176,6 +180,9 @@ getConferenceCallForProposalsR confId = do
   <div .row>
     <div .medium-9 .column>
       ^{ct}
+  <div .row>
+    <div .medium-9 .column>
+      ^{pages}
 |]
 
 colonnadeAbstracts :: ConferenceId
