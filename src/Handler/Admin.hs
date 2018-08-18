@@ -208,6 +208,52 @@ genFilterConstraints CfpFilterForm{..} abstractType abstract = do
       where_ $ abstractType ^. AbstractTypeId
                ==. val abstractTypeKey
 
+postConferenceBlockAbstractR :: ConferenceId
+                            -> AbstractId
+                            -> Handler Html
+postConferenceBlockAbstractR confId abstractId = do
+  (_, confEntity) <- requireAdminForConference confId
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
+  runDB $ blockAbstract abstractId
+  redirect $ ConferenceAbstractR confId abstractId
+
+postConferenceUnblockAbstractR :: ConferenceId
+                            -> AbstractId
+                            -> Handler Html
+postConferenceUnblockAbstractR confId abstractId = do
+  (_, confEntity) <- requireAdminForConference confId
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
+  runDB $ unblockAbstract abstractId
+  redirect $ ConferenceAbstractR confId abstractId
+
+getConferenceBlockedProposalsR :: ConferenceId -> Handler Html
+getConferenceBlockedProposalsR confId = do
+  (_, confEntity) <- requireAdminForConference confId
+  let getAbstracts =
+        select $
+          getAbstractsForConference'' (\ _ _ -> return ()) True confId
+  abstractList <- runDB getAbstracts
+  let ct = encodeCellTable [] (colonnadeAbstracts confId) abstractList
+  baseLayout Nothing $ do
+    setTitle "Blocked Call for Proposals"
+    [whamlet|
+<article .grid-container>
+  <div .row>
+    <div .medium-6 .column>
+      ^{renderConferenceWidget confEntity}
+    <div .medium-6 .column>
+      <a href="@{ConferenceCallForProposalsR confId}">
+        Return to unblocked CFPs
+  <div .row>
+    <div .medium-9 .column>
+      <h1>#{length abstractList} blocked abstracts
+  <div .row>
+    <div .medium-9 .column>
+      ^{ct}
+|]
+
 getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId
@@ -221,7 +267,8 @@ getConferenceCallForProposalsR confId = do
         genFilterConstraints cfpFilterF abstractType abstract
       getAbstracts =
         select $
-          getAbstractsForConference'' filters confId
+          -- unblocked abstracts only
+          getAbstractsForConference'' filters False confId
   abstractList <- runDB getAbstracts
   abstractPages <- Page.paginate 20 abstractList
   let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
@@ -232,7 +279,10 @@ getConferenceCallForProposalsR confId = do
     [whamlet|
 <article .grid-container>
   <div .row>
-    ^{renderConferenceWidget confEntity}
+    <div .medium-6 .column>
+      ^{renderConferenceWidget confEntity}
+    <div .medium-6 .column>
+      <a href="@{ConferenceBlockedProposalsR confId}">Blocked CFPs
   <div .row>
     <form method="GET" action="@{ConferenceCallForProposalsR confId}">
       ^{filterWidget}
@@ -308,6 +358,8 @@ conferenceAbstractView (Entity confId conference)
   <div .row>
     <div .medium-9 .column>
       <h1>Editing abstract #{tshow (fromSqlKey abstractId)}
+      $if abstractBlocked
+        <h1>NOTE: THIS ABSTRACT HAS BEEN BLOCKED
       <h3>Conference: #{conferenceName conference}
       <div.row.breathe>
         <div.column>
@@ -331,12 +383,35 @@ conferenceAbstractView (Entity confId conference)
             <div.callout>
               #{editedMarkdown}
       <div.row.breathe>
-        <div.column>
+        <div. .medium-3 .column>
           <form method=POST
                 enctype=#{enctype}
-                action=@{ConferenceAbstractR confId abstractId}#focus>
+                action=@{ConferenceAbstractR confId abstractId}
+                #focus>
             ^{widget}
             <input .button type="submit" value="Update abstract">
+        $if abstractBlocked
+          <div. .medium-3 .column>
+            <form method=POST
+                  enctype=#{enctype}
+                  action=@{ConferenceUnblockAbstractR confId abstractId}
+                  #focus>
+              <label>
+                Warning! This will unblock the abstract and
+                reintroduce it for editing and consideration
+                for inclusion in the conference.
+              <input .button type="submit" value="Unblock abstract">
+        $else
+          <div. .medium-3 .column>
+            <form method=POST
+                  enctype=#{enctype}
+                  action=@{ConferenceBlockAbstractR confId abstractId}
+                  #focus>
+              <label>
+                Warning! This will remove the abstract from
+                editing and consideration for inclusion in
+                the conference.
+              <input .button type="submit" value="Block abstract">
 |]
 
 mkAbstractForm :: Abstract -> Form EditedAbstract

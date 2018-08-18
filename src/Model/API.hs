@@ -274,7 +274,8 @@ getAbstractsForConference' :: ( FromPreprocess
                            -> query ( expr (Entity Abstract)
                                     , expr (Entity AbstractType))
 getAbstractsForConference' conferenceId =
-  getAbstractsForConference'' (\_ _ -> return ()) conferenceId
+  -- Only get unblocked abstracts by default
+  getAbstractsForConference'' (\_ _ -> return ()) False conferenceId
 
 getAbstractsForConference'' :: ( FromPreprocess
                                  query expr backend (expr (Entity AbstractType))
@@ -284,14 +285,16 @@ getAbstractsForConference'' :: ( FromPreprocess
                               -> expr (Entity Abstract)
                               -> query ()
                                )
+                            -> Bool
                             -> ConferenceId
                             -> query ( expr (Entity Abstract)
                                      , expr (Entity AbstractType))
-getAbstractsForConference'' constraints conferenceId =
+getAbstractsForConference'' constraints blocked conferenceId =
   from $ \(abstractType `InnerJoin` abstract) -> do
     on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
     where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
     constraints abstractType abstract
+    where_ (abstract ^. AbstractBlocked ==. val blocked)
     pure (abstract, abstractType)
 
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
@@ -299,5 +302,19 @@ updateAbstract abstractId title body = do
   update $ \a -> do
      set a [ AbstractEditedTitle =. val (Just title)
            , AbstractEditedAbstract =. val (Just body)
+           ]
+     where_ (a ^. AbstractId ==. val abstractId)
+
+blockAbstract :: AbstractId -> DB ()
+blockAbstract abstractId =
+  update $ \a -> do
+     set a [ AbstractBlocked =. val True
+           ]
+     where_ (a ^. AbstractId ==. val abstractId)
+
+unblockAbstract :: AbstractId -> DB ()
+unblockAbstract abstractId =
+  update $ \a -> do
+     set a [ AbstractBlocked =. val False
            ]
      where_ (a ^. AbstractId ==. val abstractId)
