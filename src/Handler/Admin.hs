@@ -3,8 +3,6 @@ module Handler.Admin where
 import Import
 
 import Colonnade hiding (fromMaybe)
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as HA
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
 
@@ -89,7 +87,7 @@ renderConferenceAbstractTypes conf@(Entity conferenceId _)
 
 getConferenceAbstractTypesR :: ConferenceId -> Handler Html
 getConferenceAbstractTypesR conferenceId = do
-  (user, owner, account, conference) <-
+  (_, _, _, conference) <-
     requireOwnerForConference conferenceId
   abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
   (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
@@ -97,13 +95,15 @@ getConferenceAbstractTypesR conferenceId = do
 
 postConferenceAbstractTypesR :: ConferenceId -> Handler Html
 postConferenceAbstractTypesR conferenceId = do
-  (user, owner, account, conference) <-
+  (_, _, _, conference) <-
     requireOwnerForConference conferenceId
   ((result, abstractTypeFormWidget), _) <- runFormPost abstractTypeForm
   case result of
     FormSuccess (AbstractTypeForm name duration) -> do
       abstractTypes <- runDB $ do
-        void $ insertEntity $ AbstractType (entityKey conference) name (makeTalkDuration duration)
+        void $
+          insertEntity $
+          AbstractType (entityKey conference) name (makeTalkDuration duration)
         getAbstractTypes (entityKey conference)
       renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
     _ -> error "bluhhh"
@@ -120,7 +120,7 @@ renderConferencesCallout xs label =
 
 getConferencesR :: Handler Html
 getConferencesR = do
-  (user, account) <- requireAccount
+  (_, account) <- requireAccount
   conferences <- runDB $ getConferencesByAccount (entityKey account)
   t <- liftIO getCurrentTime
   let ArrangedConferences{..} = arrangeConferencesByStatus t conferences
@@ -231,9 +231,9 @@ arrangeConferencesByStatus currentTime confs =
               ArrangedConferences (e : nyo) o c
             CfpOpen _ ->
               ArrangedConferences nyo (e : o) c
-            CfpOpenUntil _ closeTime ->
+            CfpOpenUntil _ _ ->
               ArrangedConferences nyo (e : o) c
-            CfpClosed _ closeTime ->
+            CfpClosed _ _ ->
               ArrangedConferences nyo o (e : c)
 
 renderConferenceWidget :: Entity Conference -> Widget
@@ -284,6 +284,7 @@ cfpFilterForm abstractTypes = do
     <*> aopt (selectFieldList abstractTypeList)
              (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
+dummyCfpFilterForm :: CfpFilterForm
 dummyCfpFilterForm = CfpFilterForm Nothing Nothing
 
 ilikeVal :: ( SqlString s
@@ -313,25 +314,26 @@ genFilterConstraints CfpFilterForm{..} abstractType abstract = do
       where_ $ abstractType ^. AbstractTypeId
                ==. val abstractTypeKey
 
+blockUnBlockAbstract :: ConferenceId
+                     -> AbstractId
+                     -> (AbstractId -> DB ())
+                     -> Handler Html
+blockUnBlockAbstract confId abstractId action = do
+  _ <- requireAdminForConference confId
+  runDB $ action abstractId
+  redirect $ ConferenceAbstractR confId abstractId
+
 postConferenceBlockAbstractR :: ConferenceId
                             -> AbstractId
                             -> Handler Html
 postConferenceBlockAbstractR confId abstractId = do
-  (_, confEntity) <- requireAdminForConference confId
-  (_, Entity _ conference) <-
-    requireAdminForConference confId
-  runDB $ blockAbstract abstractId
-  redirect $ ConferenceAbstractR confId abstractId
+  blockUnBlockAbstract confId abstractId blockAbstract
 
 postConferenceUnblockAbstractR :: ConferenceId
                             -> AbstractId
                             -> Handler Html
 postConferenceUnblockAbstractR confId abstractId = do
-  (_, confEntity) <- requireAdminForConference confId
-  (_, Entity _ conference) <-
-    requireAdminForConference confId
-  runDB $ unblockAbstract abstractId
-  redirect $ ConferenceAbstractR confId abstractId
+  blockUnBlockAbstract confId abstractId unblockAbstract
 
 getConferenceBlockedProposalsR :: ConferenceId -> Handler Html
 getConferenceBlockedProposalsR confId = do
@@ -452,7 +454,7 @@ conferenceAbstractView :: Entity Conference
                        -> Enctype
                        -> Handler Html
 conferenceAbstractView (Entity confId conference)
-  (Entity abstractId abstract@Abstract{..}) widget enctype = do
+  (Entity abstractId Abstract{..}) widget enctype = do
   abstractMarkdown <- renderMarkdown abstractAuthorAbstract
   abstractEditedMarkdown <-
     traverse renderMarkdown abstractEditedAbstract
