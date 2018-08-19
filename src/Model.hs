@@ -66,6 +66,8 @@ Conference sql=conferences
   account AccountId
   name Text
   description Text
+  opened UTCTime Maybe
+  closed UTCTime Maybe
   deriving Eq Show
 
 CustomForm sql=custom_forms

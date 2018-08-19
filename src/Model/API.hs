@@ -218,9 +218,14 @@ createAccount email pass = do
 -- Conferences
 --------------------------------------------------------------------------------
 
-createConferenceForAccount :: AccountId -> Text -> Text -> DB (Entity Conference)
-createConferenceForAccount accountId confName confDesc = do
-  insertEntity $ Conference accountId confName confDesc
+createConferenceForAccount :: AccountId
+                           -> Text
+                           -> Text
+                           -> Maybe UTCTime
+                           -> Maybe UTCTime
+                           -> DB (Entity Conference)
+createConferenceForAccount accountId confName confDesc openingTime closingTime = do
+  insertEntity $ Conference accountId confName confDesc openingTime closingTime
 
 getConferencesByAccount :: AccountId -> DB [Entity Conference]
 getConferencesByAccount accId = getRecsByField ConferenceAccount accId
@@ -318,3 +323,25 @@ unblockAbstract abstractId =
      set a [ AbstractBlocked =. val False
            ]
      where_ (a ^. AbstractId ==. val abstractId)
+
+openConferenceCfp :: ConferenceId -> DB ()
+openConferenceCfp confId = do
+  t <- getDBTime
+  update $ \c -> do
+     set c [ ConferenceOpened =. val (Just t)
+           , ConferenceClosed =. val Nothing
+           ]
+     where_ (c ^. ConferenceId ==. val confId)
+
+closeConferenceCfp :: ConferenceId -> DB ()
+closeConferenceCfp confId = do
+  t <- getDBTime
+  update $ \c -> do
+     set c [ ConferenceClosed =. val (Just t)
+           ]
+     where_ (c ^. ConferenceId ==. val confId)
+
+getDBTime :: DB UTCTime
+getDBTime = do
+  [Single r] <- rawSql "select now()" []
+  return r

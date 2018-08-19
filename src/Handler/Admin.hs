@@ -59,15 +59,18 @@ abstractTypeForm =
                         (placeheld "Talk type duration in minutes: ")) Nothing
 
 renderConferenceAbstractTypes ::
-     ConferenceId
+     Entity Conference
   -> [Entity AbstractType]
   -> Widget
   -> Handler Html
-renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget = do
+renderConferenceAbstractTypes conf@(Entity conferenceId _)
+  abstractTypes abstractTypeFormWidget = do
   baseLayout Nothing $ do
     setTitle "Conference Abstract Types"
     [whamlet|
 <article .grid-container>
+  <div .medium-3 .cell>
+    ^{renderConferenceWidget conf}
   <div .medium-3 .cell>
     <h1>Add a new abstract type
     <div>
@@ -90,7 +93,7 @@ getConferenceAbstractTypesR conferenceId = do
     requireOwnerForConference conferenceId
   abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
   (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
-  renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget
+  renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
 
 postConferenceAbstractTypesR :: ConferenceId -> Handler Html
 postConferenceAbstractTypesR conferenceId = do
@@ -102,26 +105,38 @@ postConferenceAbstractTypesR conferenceId = do
       abstractTypes <- runDB $ do
         void $ insertEntity $ AbstractType (entityKey conference) name (makeTalkDuration duration)
         getAbstractTypes (entityKey conference)
-      renderConferenceAbstractTypes conferenceId abstractTypes abstractTypeFormWidget
+      renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
     _ -> error "bluhhh"
+
+renderConferencesCallout :: [Entity Conference] -> Text -> Widget
+renderConferencesCallout [] _ = return ()
+renderConferencesCallout xs label =
+  [whamlet|
+<div .callout>
+  <h5>#{label}
+  $forall conf <- xs
+    ^{renderConferenceWidget conf}
+|]
 
 getConferencesR :: Handler Html
 getConferencesR = do
   (user, account) <- requireAccount
   conferences <- runDB $ getConferencesByAccount (entityKey account)
+  t <- liftIO getCurrentTime
+  let ArrangedConferences{..} = arrangeConferencesByStatus t conferences
   baseLayout Nothing $ do
     setTitle "My Conferences"
     [whamlet|
 <article .grid-container>
-  <div .medium-6 .cell>
-    <div .medium-12 .cell>
-      <h1>My Conferences
-    <div .medium-12 .cell>
+  <div .small-6 .cell>
+    <h1>My Conferences
+  <div .small-3 .cell>
     $if null conferences
       <h5>You haven't created any conferences yet!
     $else
-      $forall conf <- conferences
-        ^{renderConferenceWidget conf}
+      ^{renderConferencesCallout notYetOpenConfs "Conferences yet to be opened for CFP submission"}
+      ^{renderConferencesCallout openConfs "Conferences open for submissions"}
+      ^{renderConferencesCallout closedConfs "Conferences closed to CFP submissions"}
 |]
 
 --------------------------------------------------------------------------------
@@ -138,26 +153,116 @@ getConferenceDashboardR confId = do
 <article .grid-container>
   ^{renderConferenceWidget confEnt}
   <div .medium-12 .cell>
-    <h2>
+    <h5>
       <a href=@{ConferenceCallForProposalsR confId}>
         Call For Proposals
-    <h2>
+    <h5>
       <a href="@{ConferenceAbstractTypesR confId}">
         Abstract types
+  <div .medium-6>
+    <div. .medium-3 .column>
+      <form method=POST
+            action=@{ConferenceCfpOpenR confId}
+            #focus>
+        <label>
+          This will open the conference's CFP, permitting
+          third parties to submit abstracts to this
+          conference. It will also wipe any previously set
+          closing date.
+        <input .button .success type="submit" value="Open CFP">
+    <div. .medium-3 .column>
+      <form method=POST
+            action=@{ConferenceCfpCloseR confId}
+            #focus>
+        <label>
+          This will close the conference's CFP for submissions,
+          preventing further abstract submissions. If an exception
+          needs to be made after closing, use the
+          <a href="/admin/abstract/submit">
+            admin abstract submission process.
+        <input .button .warning type="submit" value="Close CFP">
 |]
 
+data CfpStatus =
+    CfpNotOpened UTCTime
+  | CfpOpen UTCTime
+  | CfpOpenUntil UTCTime UTCTime
+  | CfpClosed UTCTime UTCTime
+  deriving Show
+
+conferenceStatus :: UTCTime -> Conference -> CfpStatus
+conferenceStatus currentTime Conference{..} =
+  case (conferenceOpened, conferenceClosed) of
+       (Nothing, Nothing) -> CfpNotOpened currentTime
+       (Just _, Nothing) -> CfpOpen currentTime
+       (_, Just closingTime) ->
+         case compare currentTime closingTime of
+           LT -> CfpOpenUntil currentTime closingTime
+           EQ -> CfpOpenUntil currentTime closingTime
+           GT -> CfpClosed currentTime closingTime
+
+renderConferenceStatus :: UTCTime -> Conference -> Text
+renderConferenceStatus currentTime conference =
+  let notOpenedMsg = "Not yet opened"
+      openMsg = "Open for submissions"
+      openUntilMsg :: Day -> Text
+      openUntilMsg t = "Open for submissions until " <> tshow t
+      closedSinceMsg :: Day -> Text
+      closedSinceMsg t = "Closed since " <> tshow t
+  in case conferenceStatus currentTime conference of
+       CfpNotOpened _ -> notOpenedMsg
+       CfpOpen _ -> openMsg
+       CfpOpenUntil _ closeTime -> openUntilMsg (utctDay closeTime)
+       CfpClosed _ closeTime -> closedSinceMsg (utctDay closeTime)
+
+data ArrangedConferences =
+  ArrangedConferences {
+    notYetOpenConfs :: [Entity Conference]
+  , openConfs :: [Entity Conference]
+  , closedConfs :: [Entity Conference]
+  } deriving Show
+
+arrangeConferencesByStatus :: UTCTime -> [Entity Conference] -> ArrangedConferences
+arrangeConferencesByStatus currentTime confs =
+  foldl' sortingHat (ArrangedConferences [] [] []) confs
+  where sortingHat (ArrangedConferences nyo o c) e@(Entity _ conf) =
+          case conferenceStatus currentTime conf of
+            CfpNotOpened _ ->
+              ArrangedConferences (e : nyo) o c
+            CfpOpen _ ->
+              ArrangedConferences nyo (e : o) c
+            CfpOpenUntil _ closeTime ->
+              ArrangedConferences nyo (e : o) c
+            CfpClosed _ closeTime ->
+              ArrangedConferences nyo o (e : c)
+
 renderConferenceWidget :: Entity Conference -> Widget
-renderConferenceWidget confEntity =
+renderConferenceWidget (Entity confId conf@Conference{..}) = do
+  t <- liftIO getCurrentTime
   [whamlet|
-<div .medium-12 .cell>
-  <a href=@{ConferenceDashboardR confId}>
-    <h1>#{name}
-<div .medium-12 .cell>
-  <p>#{desc}
+<div .grid-x>
+  <div .medium-3 .cell>
+    <a href=@{ConferenceDashboardR confId}>
+      <h3>#{conferenceName}
+  <div .small-2 .cell .center-flex>
+    <label>
+      #{renderConferenceStatus t conf}
+<div .grid-x>
+  <div .medium-12 .cell>
+    <p>#{conferenceDescription}
 |]
-  where
-    confId = entityKey confEntity
-    Conference _ name desc = entityVal confEntity
+
+postConferenceCfpOpenR :: ConferenceId -> Handler Html
+postConferenceCfpOpenR confId = do
+  _ <- requireOwnerForConference confId
+  runDB $ openConferenceCfp confId
+  redirect $ ConferenceDashboardR confId
+
+postConferenceCfpCloseR :: ConferenceId -> Handler Html
+postConferenceCfpCloseR confId = do
+  _ <- requireOwnerForConference confId
+  runDB $ closeConferenceCfp confId
+  redirect $ ConferenceDashboardR confId
 
 data CfpFilterForm =
   CfpFilterForm {
@@ -400,7 +505,7 @@ conferenceAbstractView (Entity confId conference)
                 Warning! This will unblock the abstract and
                 reintroduce it for editing and consideration
                 for inclusion in the conference.
-              <input .button type="submit" value="Unblock abstract">
+              <input .button .success type="submit" value="Unblock abstract">
         $else
           <div. .medium-3 .column>
             <form method=POST
@@ -411,7 +516,7 @@ conferenceAbstractView (Entity confId conference)
                 Warning! This will remove the abstract from
                 editing and consideration for inclusion in
                 the conference.
-              <input .button type="submit" value="Block abstract">
+              <input .button .alert type="submit" value="Block abstract">
 |]
 
 mkAbstractForm :: Abstract -> Form EditedAbstract
