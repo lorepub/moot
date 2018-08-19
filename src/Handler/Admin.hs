@@ -3,6 +3,7 @@ module Handler.Admin where
 import Import
 
 import Colonnade hiding (fromMaybe)
+import qualified Data.Map as M
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
 
@@ -120,17 +121,83 @@ renderConferencesCallout xs label =
 
 getConferencesR :: Handler Html
 getConferencesR = do
-  (_, account) <- requireAccount
-  conferences <- runDB $ getConferencesByAccount (entityKey account)
-  t <- liftIO getCurrentTime
-  let ArrangedConferences{..} = arrangeConferencesByStatus t conferences
+  (user, account) <- requestAccount
+  let maybeAccountConfsW = fmap renderAccountConferences account
   baseLayout Nothing $ do
     setTitle "My Conferences"
     [whamlet|
 <article .grid-container>
-  <div .small-6 .cell>
-    <h1>My Conferences
-  <div .small-3 .cell>
+  ^{renderSubmitterConferences (entityKey user)}
+  <hr>
+  $maybe widget <- maybeAccountConfsW
+    ^{widget}
+  $nothing
+    <h5>You aren't managing any conferences
+    <p>Would you like to <a>create a conference?</a>
+|]
+
+groupTriplets :: [( Entity Conference
+                  , Entity AbstractType
+                  , Entity Abstract
+                  )]
+              -> Map ConferenceId
+                 ( Entity Conference
+                 , [( Entity AbstractType
+                    , Entity Abstract
+                    )])
+groupTriplets ts =
+  foldl' f M.empty ts
+  where f m (conference, abstractType, abstract) =
+          M.insertWith
+            g
+            (entityKey conference)
+            (conference, [(abstractType, abstract)])
+            m
+        g (k, xs) (_, ys) = (k, xs <> ys)
+
+renderSubmitterConferences :: UserId
+                           -> Widget
+renderSubmitterConferences userId = do
+  triplets <- handlerToWidget $ runDB $ getConferencesBySubmissions userId
+  case triplets of
+    [] -> [whamlet|
+  <h5>You haven't submitted to any conferences
+|]
+    xs -> do
+      let grouped = groupTriplets xs
+      [whamlet|
+  <div .small-2 .cell>
+    <h1>Conferences I have submitted to
+  <div .small-4 .cell>
+    $forall (conference, abstractPairs) <- grouped
+      ^{renderConferenceSubmission conference abstractPairs}
+|]
+
+renderConferenceSubmission :: Entity Conference
+                           -- -> Entity AbstractType
+                           -- -> Entity Abstract
+                           -> [( Entity AbstractType
+                               , Entity Abstract
+                               )]
+                           -> Widget
+renderConferenceSubmission (Entity _ Conference{..}) abstractPairs = do
+  [whamlet|
+    <h5>My abstracts submitted to #{conferenceName}
+    <ul>
+      $forall (Entity _ abstractType, Entity _ abstract) <- abstractPairs
+        <li>#{abstractAuthorTitle abstract} - #{renderAbstractType abstractType}
+|]
+
+renderAccountConferences :: Entity Account
+                         -> Widget
+renderAccountConferences account = do
+  conferences <- handlerToWidget $ runDB $ getConferencesByAccount (entityKey account)
+  t <- liftIO getCurrentTime
+  let ArrangedConferences{..} = arrangeConferencesByStatus t conferences
+  [whamlet|
+  <div .small-2 .cell>
+    <h1>Conferences I am managing
+  <div .small-4 .cell>
     $if null conferences
       <h5>You haven't created any conferences yet!
     $else
