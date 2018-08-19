@@ -84,10 +84,15 @@ unsafeIdx xs n
                        _ -> r (k-1)) (error ("index too large: " ++ show n))  xs n
 
 makeConference :: AccountId
+               -> Maybe UTCTime
+               -> Maybe UTCTime
                -> Text
                -> DB (Entity Conference)
-makeConference accountId confName =
-  createConferenceForAccount accountId confName "The coolest code conf"
+makeConference accountId openingTime closingTime confName =
+  createConferenceForAccount
+    accountId confName
+    "The coolest code conf"
+    openingTime closingTime
 
 makeAbstractType :: ConferenceId
                  -> TalkDuration
@@ -131,6 +136,12 @@ makeAbstract :: UserId
 makeAbstract abstractUser abstractAbstractType abstractAuthorTitle =
   insertEntity $ makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle
 
+pastTime :: Maybe UTCTime
+pastTime = Just $ UTCTime (fromGregorian 2017 1 1) 0
+
+futureTime :: Maybe UTCTime
+futureTime = Just $ UTCTime (fromGregorian 2019 1 1) 0
+
 insertFixtures :: DB Fixtures
 insertFixtures = do
   (accountUsersF, allOwnersF, allAccountsF) <- makeAccounts
@@ -142,11 +153,17 @@ insertFixtures = do
       alexeyAccountK = entityKey alexeyAccount
       waddlesUser = unsafeIdx plainUsersF 0
       waddlesUserK = entityKey waddlesUser
-  chrisConferencesF <-
-    traverse (makeConference chrisAccountK)
-      ["Chris Conf 9000", "Chris's Other Conf", "Chris's Best Conf" ]
+
+  chrisConferencesOpen <-
+    traverse (makeConference chrisAccountK pastTime futureTime)
+      ["Chris Conf 9000", "Chris's Other Conf"]
+  chrisConferenceClosed <-
+    makeConference chrisAccountK pastTime pastTime "Chris's Best Conf"
+  let chrisConferencesF =
+        chrisConferencesOpen <> [chrisConferenceClosed]
+
   alexeyConferencesF <-
-    traverse (makeConference alexeyAccountK)
+    traverse (makeConference alexeyAccountK pastTime futureTime)
       ["Alexey Conf 9000", "Alexey's Other Conf", "Alexeys's Best Conf" ]
 
   let chrisFirstConf = unsafeIdx chrisConferencesF 0
