@@ -230,6 +230,20 @@ createConferenceForAccount accountId confName confDesc openingTime closingTime =
 getConferencesByAccount :: AccountId -> DB [Entity Conference]
 getConferencesByAccount accId = getRecsByField ConferenceAccount accId
 
+getConferencesBySubmissions :: UserId
+                            -> DB [( Entity Conference
+                                   , Entity AbstractType
+                                   , Entity Abstract
+                                   )
+                                  ]
+getConferencesBySubmissions userId =
+  select $
+    from $ \(conference `InnerJoin` abstractType `InnerJoin` abstract) -> do
+      on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
+      on (conference ^. ConferenceId ==. abstractType ^. AbstractTypeConference)
+      where_ (abstract ^. AbstractUser ==. val userId)
+      pure (conference, abstractType, abstract)
+
 getConference :: ConferenceId -> DB (Maybe (Entity Conference))
 getConference confId = getRecByField ConferenceId confId
 

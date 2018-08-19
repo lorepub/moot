@@ -32,15 +32,29 @@ requireOwner = do
     (Just owner) ->
       return (user, owner)
 
+noAccountsForUserMsg :: Text
+noAccountsForUserMsg = "No accounts associated with your user"
+
+noConferencesForUserMsg :: Text
+noConferencesForUserMsg = "No conferences associated with your user"
+
 requireAccount :: Handler (Entity User, Entity Account)
 requireAccount = do
+  maybeAccount <- requestAccount
+  case maybeAccount of
+    (user, Nothing) -> do
+      $logWarn "Current user is not associated with an account"
+      permissionDenied noAccountsForUserMsg
+    (user, Just account) -> return (user, account)
+
+requestAccount :: Handler (Entity User, Maybe (Entity Account))
+requestAccount = do
   user <- requireUser
   maybeAccount <- runDB $ getAccountByUser (entityKey user)
   case maybeAccount of
     Nothing -> do
-      $logWarn "Current user is not associated with an account"
-      permissionDenied "No accounts associated with your user"
-    Just account -> return (user, account)
+      return (user, Nothing)
+    Just account -> return (user, Just account)
 
 requireOwnerForEntity
   :: DBVal a
@@ -66,10 +80,10 @@ requireOwnerForConference conferenceId = do
   case maybeConfAcc of
     Nothing -> do
       $logWarn "Current user is not associated with an account"
-      permissionDenied "No accounts associated with your user"
+      permissionDenied noAccountsForUserMsg
     Just (_, Nothing) -> do
       $logWarn "Current user is not associated with any conferences"
-      permissionDenied "No conferences associated with your user"
+      permissionDenied noConferencesForUserMsg
     Just (acc, Just conf) ->
       return (user, owner, acc, conf)
   where

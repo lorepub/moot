@@ -55,6 +55,11 @@ waddlestonEmail = [email|waddleston@lol.com|]
 waddlestonPassword :: Text
 waddlestonPassword = "waddlesPass"
 
+doNothingEmail :: Email
+doNothingEmail = [email|nothing@lol.com|]
+doNothingPassword :: Text
+doNothingPassword = "nothingPass"
+
 makeAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
 makeAccount email' pass = do
   createAccount email' pass
@@ -72,7 +77,9 @@ makeUser email' pass = do
 
 makeUsers :: DB [Entity User]
 makeUsers =
-  sequenceA [ makeUser waddlestonEmail waddlestonPassword ]
+  sequenceA [ makeUser waddlestonEmail waddlestonPassword
+            , makeUser doNothingEmail doNothingPassword
+            ]
 
 {-# INLINABLE unsafeIdx #-}
 unsafeIdx :: (MonoFoldable c) => c -> Integer -> Element c
