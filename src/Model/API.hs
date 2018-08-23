@@ -221,11 +221,15 @@ createAccount email pass = do
 createConferenceForAccount :: AccountId
                            -> Text
                            -> Text
+                           -> Markdown
                            -> Maybe UTCTime
                            -> Maybe UTCTime
                            -> DB (Entity Conference)
-createConferenceForAccount accountId confName confDesc openingTime closingTime = do
-  insertEntity $ Conference accountId confName confDesc openingTime closingTime
+createConferenceForAccount accountId confName confDesc
+  cfpIntro openingTime closingTime = do
+  insertEntity
+    $ Conference accountId confName confDesc
+      cfpIntro openingTime closingTime
 
 getConferencesByAccount :: AccountId -> DB [Entity Conference]
 getConferencesByAccount accId = getRecsByField ConferenceAccount accId

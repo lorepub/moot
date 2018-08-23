@@ -155,15 +155,17 @@ createAccountForm =
       <*> areq passwordField (named "password"
                               (placeheld "Password: ")) Nothing
 
-renderSubmitAbstract :: ConferenceId
+renderSubmitAbstract :: Entity Conference
                      -> Widget
                      -> Widget
                      -> Handler Html
-renderSubmitAbstract confId submitAbstractForm createAccountForm =
+renderSubmitAbstract (Entity confId Conference{..}) submitAbstractForm createAccountForm = do
+  welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
     <div .medium-6 .cell>
+      #{welcomeMarkdown}
       <form method="POST"
             action="@{SubmitAbstractR confId}">
         ^{createAccountForm}
@@ -174,11 +176,12 @@ renderSubmitAbstract confId submitAbstractForm createAccountForm =
 getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
   abstractTypes <- runDB $ getAbstractTypes conferenceId
+  conf <- runDBOr404 $ get conferenceId
   (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)
   (accountWidget', _) <- generateFormPost createAccountForm
   maybeUser <- getUser
   let accountWidget = maybe accountWidget' (const $ return ()) maybeUser
-  renderSubmitAbstract conferenceId abstractWidget accountWidget
+  renderSubmitAbstract (Entity conferenceId conf) abstractWidget accountWidget
 
 handleCreateAccountOrLoggedIn :: Handler (Maybe (Entity User), Widget)
 handleCreateAccountOrLoggedIn = do
@@ -197,12 +200,13 @@ handleCreateAccountOrLoggedIn = do
 
 postSubmitAbstractR :: ConferenceId -> Handler Html
 postSubmitAbstractR confId = do
-  abstractTypes <- runDBOr404 $ do
+  (conf, abstractTypes) <- runDBOr404 $ do
     maybeConf <- getConference confId
     case maybeConf of
       Nothing -> return Nothing
-      (Just _) -> do
-        fmap Just $ getAbstractTypes confId
+      (Just conf) -> do
+        abstractTypes <- getAbstractTypes confId
+        return $ Just $ (conf, abstractTypes)
 
   (maybeUser, createAccountWidget) <- handleCreateAccountOrLoggedIn
   ((submittedAbstract, abstractWidget), _) <- runFormPost (abstractForm abstractTypes)
@@ -225,7 +229,7 @@ postSubmitAbstractR confId = do
                  False
                 )
         redirect (SubmittedAbstractR confId)
-    _ -> renderSubmitAbstract confId abstractWidget createAccountWidget
+    _ -> renderSubmitAbstract conf abstractWidget createAccountWidget
 
 getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do

@@ -99,6 +99,13 @@ makeConference accountId openingTime closingTime confName =
   createConferenceForAccount
     accountId confName
     "The coolest code conf"
+    (Markdown [st|
+# You are submitting to the best conf
+
+![](https://i.imgur.com/CzTosV9.jpg)
+
+Thank you for submitting to this conf!
+|])
     openingTime closingTime
 
 makeAbstractType :: ConferenceId

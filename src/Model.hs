@@ -66,6 +66,7 @@ Conference sql=conferences
   account AccountId
   name Text
   description Text
+  cfpWelcome Markdown
   opened UTCTime Maybe
   closed UTCTime Maybe
   deriving Eq Show
