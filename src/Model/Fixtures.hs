@@ -60,25 +60,25 @@ doNothingEmail = [email|nothing@lol.com|]
 doNothingPassword :: Text
 doNothingPassword = "nothingPass"
 
-makeAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
-makeAccount email' pass = do
-  createAccount email' pass
+makeAccount :: Email -> Text -> Text -> DB (Entity User, Entity Owner, Entity Account)
+makeAccount email' name pass = do
+  createAccount email' name pass
 
 makeAccounts :: DB ([Entity User], [Entity Owner], [Entity Account])
 makeAccounts =
   unzip3 <$>
-  sequenceA [ makeAccount chrisEmail chrisPassword
-            , makeAccount alexeyEmail alexeyPassword
+  sequenceA [ makeAccount chrisEmail "Chris Allen" chrisPassword
+            , makeAccount alexeyEmail "Alexey" alexeyPassword
             ]
 
-makeUser :: Email -> Text -> DB (Entity User)
-makeUser email' pass = do
-  createUser email' pass
+makeUser :: Email -> Text -> Text -> DB (Entity User)
+makeUser email' name pass = do
+  createUser email' name pass
 
 makeUsers :: DB [Entity User]
 makeUsers =
-  sequenceA [ makeUser waddlestonEmail waddlestonPassword
-            , makeUser doNothingEmail doNothingPassword
+  sequenceA [ makeUser waddlestonEmail "Waddles" waddlestonPassword
+            , makeUser doNothingEmail "Know Nothing" doNothingPassword
             ]
 
 {-# INLINABLE unsafeIdx #-}

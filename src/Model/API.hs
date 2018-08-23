@@ -151,15 +151,16 @@ getUserBy field value =
   return user
 
 defaultCreateUser :: Email
+                  -> Text
                   -> IO User
-defaultCreateUser userEmail = do
+defaultCreateUser userEmail userName = do
   t <- getCurrentTime
   let userCreatedAt = t
   return $ User{..}
 
-createUser :: Email -> Text -> DB (Entity User)
-createUser email pass = do
-  newUser <- liftIO $ defaultCreateUser email
+createUser :: Email -> Text -> Text -> DB (Entity User)
+createUser email name pass = do
+  newUser <- liftIO $ defaultCreateUser email name
   userId <- insert newUser
   hash <- liftIO $ hashPassword pass
   _ <- insert (Password hash userId)
@@ -207,9 +208,12 @@ createOwner userKey = do
   owner <- insertEntity $ Owner userKey
   return owner
 
-createAccount :: Email -> Text -> DB (Entity User, Entity Owner, Entity Account)
-createAccount email pass = do
-  user <- createUser email pass
+createAccount :: Email
+              -> Text
+              -> Text
+              -> DB (Entity User, Entity Owner, Entity Account)
+createAccount email name pass = do
+  user <- createUser email name pass
   owner <- createOwner (entityKey user)
   account <- insertEntity $ Account (entityKey owner)
   return (user, owner, account)

@@ -25,6 +25,7 @@ import Model.Types as Export
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users
   email Email sqltype=varchar(100)
+  name Text sqltype=varchar(100)
   createdAt UTCTime
   UniqueUserEmail email
   deriving Eq Show

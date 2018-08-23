@@ -125,6 +125,7 @@ data SubmittedAbstract =
 data CreateAccount =
   CreateAccount {
     createAccountEmail :: Email
+  , createAccountName :: Text
   , createAccountPassword :: Text
   } deriving Show
 
@@ -151,7 +152,9 @@ createAccountForm =
   renderDivs $
     CreateAccount
       <$> areq emailField' (named "email"
-                           (placeheld "Email:")) Nothing
+                           (placeheld "Email: ")) Nothing
+      <*> areq textField (named "name"
+                           (placeheld "Name: ")) Nothing
       <*> areq passwordField (named "password"
                               (placeheld "Password: ")) Nothing
 
@@ -159,7 +162,8 @@ renderSubmitAbstract :: Entity Conference
                      -> Widget
                      -> Widget
                      -> Handler Html
-renderSubmitAbstract (Entity confId Conference{..}) submitAbstractForm createAccountForm = do
+renderSubmitAbstract (Entity confId Conference{..})
+  submitAbstractForm createAccountForm = do
   welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
@@ -193,8 +197,8 @@ handleCreateAccountOrLoggedIn = do
     Nothing ->
       case acctData of
         FormSuccess
-          (CreateAccount email password) -> do
-            user <- runDB $ createUser email password
+          (CreateAccount email name password) -> do
+            user <- runDB $ createUser email name password
             return $ (Just user, widget)
         _ -> return $ (Nothing, widget)
 

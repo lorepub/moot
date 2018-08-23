@@ -161,7 +161,7 @@ postSignupR = do
             return Nothing
           Nothing -> do
             (Entity dbUserKey _) <-
-              createUser signupEmail signupPassword
+              createUser signupEmail signupName signupPassword
             return (Just dbUserKey)
       case dbUserKeyM of
         Nothing -> do

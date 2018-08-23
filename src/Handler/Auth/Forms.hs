@@ -13,6 +13,7 @@ loginForm =
 
 data SignupForm = SignupForm {
     signupEmail :: Email
+  , signupName :: Text
   , signupPassword :: Text
   }
 
@@ -21,6 +22,7 @@ signupForm =
   renderDivs $
     SignupForm
       <$> areq emailField' (named "email" (placeheld "Email: ")) Nothing
+      <*> areq textField (named "name" (placeheld "Name: ")) Nothing
       <*> areq passwordField (named "password" (placeheld "Password: ")) Nothing
 
 forgotForm :: Form Email
