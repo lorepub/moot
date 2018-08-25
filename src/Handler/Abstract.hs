@@ -2,6 +2,7 @@ module Handler.Abstract where
 
 import Import
 
+import Handler.Auth
 import Helpers.Forms
 import Helpers.Handlers
 import Helpers.Views
@@ -179,6 +180,7 @@ renderSubmitAbstract (Entity confId Conference{..})
 
 getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
+  _ <- requireVerifiedUser
   abstractTypes <- runDB $ getAbstractTypes conferenceId
   conf <- runDBOr404 $ get conferenceId
   (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)

@@ -21,6 +21,15 @@ requireUser = do
       redirect HomeR -- LoginR
     (Just user) -> return user
 
+requireVerifiedUser :: Handler (Entity User)
+requireVerifiedUser = do
+  user <- requireUser
+  case userVerifiedAt (entityVal user) of
+    Nothing -> do
+      $logWarn "User not verified"
+      permissionDenied "You must have verified your email address to access this page."
+    (Just _) -> return user
+
 requireOwner :: Handler (Entity User, Entity Owner)
 requireOwner = do
   user <- requireUser
