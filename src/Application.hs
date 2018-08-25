@@ -45,6 +45,7 @@ import Handler.Admin
 import Handler.Abstract
 import Handler.Auth
 import Handler.Home
+import Helpers.Email
 
 mkYesodDispatch "App" resourcesApp
 

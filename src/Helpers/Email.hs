@@ -37,11 +37,17 @@ mootDefaultEmail subject html addressees =
 --            to set a new password. If you did not make this request, ignore it!
 --         |]
 
-sendTestEmail :: IO (PostmarkResponse PostmarkError Sent)
-sendTestEmail = do
+sendTestEmail' :: Text -> Text -> IO (PostmarkResponse PostmarkError Sent)
+sendTestEmail' apiToken destination = do
+  let settings = postmarkSettings apiToken
+      emailHtml = "<h1>hi</h1>"
+  request settings $ Postmark.email (mootDefaultEmail "Test Email" emailHtml [destination])
+
+sendTestEmail :: Text -> IO (PostmarkResponse PostmarkError Sent)
+sendTestEmail destination = do
   let settings = postmarkSettings "POSTMARK_API_TEST"
       emailHtml = "<h1>hi</h1>"
-  request settings $ Postmark.email (mootDefaultEmail "Test Email" emailHtml ["test@mootapp.com"])
+  request settings $ Postmark.email (mootDefaultEmail "Test Email" emailHtml [destination])
 
 sendEmail' :: PostmarkRequest' x
            -> Handler (PostmarkResponse PostmarkError x)
