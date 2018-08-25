@@ -7,7 +7,7 @@ packages:
     commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
   extra-dep: true
 - location:
-    git: git@github.com:bitemyapp/network-api-support.git
+    git: https://github.com/bitemyapp/network-api-support.git
     commit: f66299ddfe1f4e235d6b8c60811e6fd31480be87
   extra-dep: true
 - location:
