@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module AppType where
 
 import Import.NoFoundation
@@ -15,4 +17,5 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
+    , appPostmark    :: PostmarkSettings
     }

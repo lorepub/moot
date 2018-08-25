@@ -11,4 +11,6 @@ database:
   database: "_env:PGDATABASE:moot_dev"
   poolsize: "_env:PGPOOLSIZE:10"
 
+postmarkToken: "_env:POSTMARK_TOKEN:POSTMARK_API_TEST"
+
 copyright: 2018, Chris Allen

@@ -28,6 +28,7 @@ import Database.Esqueleto.Internal.Sql as Import (SqlSelect)
 import Model                 as Import
 import Model.Render          as Import
 import Model.API             as Import
+import Network.Api.Postmark  as Import hiding (Email, email)
 import Numeric.Natural       as Import
 import Settings              as Import
 import Settings.StaticFiles  as Import

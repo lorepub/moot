@@ -7,6 +7,10 @@ packages:
     commit: 08c9b4cdf977d5bcd1baba046a007940c1940758
   extra-dep: true
 - location:
+    git: git@github.com:bitemyapp/network-api-support.git
+    commit: f66299ddfe1f4e235d6b8c60811e6fd31480be87
+  extra-dep: true
+- location:
     git: https://github.com/yesodweb/wai.git
     commit: 6bf765e000c6fd14e09ebdea6c4c5b1510ff5376
     subdirs:
@@ -16,6 +20,7 @@ packages:
 allow-newer: true
 
 extra-deps:
+  - postmark-0.2.3
   - streaming-commons-0.2.0.0
   - time-1.9.1
   - yesod-colonnade-1.3.0.1
