@@ -62,6 +62,8 @@ data AppSettings = AppSettings
 
     , appAuthDummyLogin         :: Bool
     -- ^ Indicate if auth dummy login should be enabled.
+    , appPostmarkToken           :: Text
+
     }
 
 instance FromJSON AppSettings where
@@ -91,6 +93,7 @@ instance FromJSON AppSettings where
         appAnalytics              <- o .:? "analytics"
 
         appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+        appPostmarkToken          <- o .:  "postmarkToken"
 
         return AppSettings {..}
 
