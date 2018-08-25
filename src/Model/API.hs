@@ -156,6 +156,7 @@ defaultCreateUser :: Email
 defaultCreateUser userEmail userName = do
   t <- getCurrentTime
   let userCreatedAt = t
+      userVerifiedAt = Nothing
   return $ User{..}
 
 createUser :: Email -> Text -> Text -> DB (Entity User)
