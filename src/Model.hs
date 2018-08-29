@@ -108,7 +108,15 @@ Abstract sql=abstracts
   editedAbstract Markdown Maybe
   blocked Bool
   deriving Eq Show
+
+Slug sql=conference_slugs
+  conference ConferenceId
+  code ConferenceCode
+  UniqueSlugCode code
+  active Bool
+  deriving Eq Show
 |]
+
 
 abstractTitle :: Abstract -> Text
 abstractTitle abstract =

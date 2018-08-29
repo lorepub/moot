@@ -631,3 +631,17 @@ postConferenceAbstractR confId abstractId = do
         (Entity confId conference)
         (Entity abstractId abstract)
         widget enctype
+
+-------------------------------------------------------
+-- Proof of concept slug versions
+-- Note to do a good job these should have used withConferenceCodeRedirect2 and 
+-- withConferenceCodeStrict2 an I should have changed existing rendering functions 
+-- (so they know ConferenceCode for form submission route)
+-------------------------------------------------------
+getConferenceAbstractPocR :: ConferenceCode -> AbstractId -> Handler Html
+getConferenceAbstractPocR code abstractId = 
+   withConferenceCodeRedirect (\c -> ConferenceAbstractPocR c abstractId) (flip getConferenceAbstractR abstractId) code
+
+postConferenceAbstractPocR :: ConferenceCode -> AbstractId -> Handler Html
+postConferenceAbstractPocR code abstractId = 
+   withConferenceCodeStrict (flip postConferenceAbstractR abstractId) code
