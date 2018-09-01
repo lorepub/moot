@@ -225,15 +225,18 @@ createAccount email name pass = do
 createConferenceForAccount :: AccountId
                            -> Text
                            -> Text
+                           -> ConferenceCode
                            -> Markdown
                            -> Maybe UTCTime
                            -> Maybe UTCTime
                            -> DB (Entity Conference)
-createConferenceForAccount accountId confName confDesc
+createConferenceForAccount accountId confName confDesc confCode
   cfpIntro openingTime closingTime = do
-  insertEntity
+  conf <- insertEntity
     $ Conference accountId confName confDesc
       cfpIntro openingTime closingTime
+  _ <- createSlug True (entityKey conf) confCode 
+  pure conf
 
 getConferencesByAccount :: AccountId -> DB [Entity Conference]
 getConferencesByAccount accId = getRecsByField ConferenceAccount accId
@@ -367,3 +370,89 @@ getDBTime :: DB UTCTime
 getDBTime = do
   [Single r] <- rawSql "select now()" []
   return r
+
+--------------------------------------------------------------------------------
+-- Slugs
+--------------------------------------------------------------------------------
+
+data SlugErr = SlugMissing  
+               -- ^ indicates missing code
+            | SlugInactive ConferenceCode 
+               -- ^ indicates use of old inactive code, active code is returned
+              deriving Show
+
+-- | Database decoding of slugs
+--   decodes 'ConferenceCode' into 'ConferenceId'
+--  'SlugErr' is used if 'ConferenceCode' is invalid or not active. 
+resolveConferenceId :: ConferenceCode -> DB (Either SlugErr ConferenceId)
+resolveConferenceId conferenceCode = do 
+     maybeSlugE <- selectFirst $
+        from $ \slug -> do
+          where_ (slug ^. SlugCode ==. val conferenceCode)
+          pure slug
+     case maybeSlugE of
+        Nothing -> pure . Left $ SlugMissing
+        Just slug -> if slugActive . entityVal $ slug 
+                     then pure . Right . slugConference . entityVal $ slug
+                     else do 
+                       activeCode <- getActiveConferenceCode $ slugConference . entityVal $ slug
+                       pure . maybe (Left $ SlugMissing) (Left . SlugInactive) $ activeCode  
+
+-- | User invoked slug creation and activation.
+--   It deactives previous active code and activates the new code
+--   only one code is active per conference if this API is used
+createOrActivateSlug :: ConferenceId 
+                    -> ConferenceCode  -- ^ new (to be created and activated) or old (to be just activated) code
+                    -> DB (ConferenceCode)
+createOrActivateSlug conferenceId conferenceCode = do 
+      maybeCurrent <- getActiveConferenceCode conferenceId
+      useSlugE <- case maybeCurrent of 
+         Nothing -> 
+           -- This conference does not have any slugs 
+           -- (otherwise there should be always one active)
+           createSlug True conferenceId conferenceCode 
+         Just currentCode -> do
+           -- | current slug exists, deactivate
+           update $ \s -> do  
+             set s [ SlugActive =. val False] 
+             where_ (s ^. SlugCode ==. val currentCode) 
+           -- | are we reactivating old slug?
+           maybeMatching <- resolveConferenceIdStrict conferenceId conferenceCode
+           case maybeMatching of 
+              Nothing -> createSlug True conferenceId conferenceCode
+              Just matching -> do
+                  -- | matching found just activate
+                  update $ \s -> do  
+                     set s [ SlugActive =. val True
+                           ] 
+                     where_ (s ^. SlugCode ==. val conferenceCode)
+                  pure matching
+      pure $ slugCode . entityVal $ useSlugE
+
+-- | convenient to use in fixtures, it is safe to create inactive slugs
+addInactiveConferenceCode :: ConferenceId -> ConferenceCode -> DB (Entity Slug)
+addInactiveConferenceCode = createSlug False 
+
+--------------------------------------------------------------------------------
+-- Slugs private primitives
+--------------------------------------------------------------------------------
+getActiveConferenceCode :: ConferenceId -> DB (Maybe ConferenceCode)
+getActiveConferenceCode conferenceId = do 
+       mslug <- selectFirst $
+          from $ \slug -> do
+           where_ ((slug ^. SlugConference ==. val conferenceId) &&. (slug ^. SlugActive ==. val True))
+           pure slug
+       pure . fmap (slugCode . entityVal) $ mslug
+           
+
+-- | use createOrActivateSlug instead unless this is first slug for the conference
+createSlug :: Bool -> ConferenceId -> ConferenceCode -> DB (Entity Slug)
+createSlug active conferenceId conferenceCode = do
+    insertEntity
+       $ Slug conferenceId conferenceCode active
+
+resolveConferenceIdStrict :: ConferenceId -> ConferenceCode -> DB (Maybe (Entity Slug))
+resolveConferenceIdStrict conferenceId conferenceCode = selectFirst $
+   from $ \slug -> do
+    where_ ((slug ^. SlugConference ==. val conferenceId) &&. (slug ^. SlugCode ==. val conferenceCode))
+    pure slug

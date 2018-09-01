@@ -35,4 +35,9 @@ mkYesodData "App" [parseRoutes|
 -- CFP submission
 /conference/#ConferenceId/cfp/submit                     SubmitAbstractR GET POST
 /conference/#ConferenceId/cfp/submitted                  SubmittedAbstractR GET
+
+-- Proof of concept slug based URLs
+/conference2/#ConferenceCode/cfp/submitted               SubmittedAbstractPocR GET
+/conference2/#ConferenceCode/abstract/#AbstractId        ConferenceAbstractPocR GET POST
+
 |]

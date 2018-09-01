@@ -237,6 +237,7 @@ postSubmitAbstractR confId = do
 
 getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do
+  -- 404 no longer needed with getSubmittedAbstractPocR 
   _ <- runDBOr404 $ get confId
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
@@ -246,3 +247,9 @@ getSubmittedAbstractR confId = do
       <p>
         Would you like to <a href="@{SubmitAbstractR confId}">submit another?</a>
 |]
+
+-------------------------------------------------------
+-- Proof of concept slug versions
+-------------------------------------------------------
+getSubmittedAbstractPocR :: ConferenceCode -> Handler Html
+getSubmittedAbstractPocR = withConferenceCodeRedirect SubmittedAbstractPocR getSubmittedAbstractR
