@@ -12,6 +12,8 @@ TODO ensure documentation is OK
 
 TODO double-check that other commands work good in this context
 
+note: did a lot of googling, no good way to disable a svc in docker-compose, need to use a dummy command, eg as documented at:
+https://stackoverflow.com/questions/37254881/is-there-any-way-to-disable-a-service-in-docker-compose-yml
 
 # Moot
 
