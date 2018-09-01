@@ -1,0 +1,15 @@
+version: '3'
+services:
+  postgres:
+    image: 'postgres:10.5'
+    environment:
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_PASSWORD=TheSuperuserPassword'
+
+  moot_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # ports:
+    #   - "3000:3000"
+    command: /bin/true

@@ -1,3 +1,18 @@
+# WIP NOTES
+
+
+TODO investigate:
+`docker-compose run moot_app /bin/bash` this works for running a shell that can have devel/ghci
+subsequent shells will need to use docker exec; should this be combineed somehow?
+should the backend just be a `sleep` wrapper so that `make docker-shell` will just exec?
+`docker-compose exec` does exist; look into this (will Chris' other CLI affordances be OK for this?)
+
+TODO ensure documentation is OK
+- TODO make sure the docs mention needint to increase memory to "docker for mac"; others building may need this too. mention error 137
+
+TODO double-check that other commands work good in this context
+
+
 # Moot
 
 This is the home of Moot, a CFP and event management system. To learn more, please see the [slides for the launch announcement](https://github.com/bitemyapp/presentations/blob/master/moot/moot.pdf).
