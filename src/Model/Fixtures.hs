@@ -10,6 +10,10 @@ data UserFixtures =
   UserFixtures { allUsersF :: [Entity User] }
   deriving (Eq, Show)
 
+data EmailVerificationFixtures =
+  EmailVerificationFixtures { allEmailVerificationsF :: [Entity EmailVerification] }
+  deriving (Eq, Show)
+
 data OwnerFixtures =
   OwnerFixtures { allOwnersF :: [Entity Owner] }
   deriving (Eq, Show)
@@ -32,6 +36,7 @@ data AbstractTypeFixtures =
 
 data Fixtures =
   Fixtures { userF :: UserFixtures
+           , emailVerificationF :: EmailVerificationFixtures
            , ownerF :: OwnerFixtures
            , accountF :: AccountFixtures
            , conferenceF :: ConferenceFixtures
@@ -60,20 +65,33 @@ doNothingEmail = [email|nothing@lol.com|]
 doNothingPassword :: Text
 doNothingPassword = "nothingPass"
 
-makeAccount :: Email -> Text -> Text -> DB (Entity User, Entity Owner, Entity Account)
+makeAccount :: Email
+            -> Text
+            -> Text
+            -> DB ( Entity User
+                  , Entity EmailVerification
+                  , Entity Owner
+                  , Entity Account
+                  )
 makeAccount email' name pass = do
   createAccount email' name pass
 
-makeAccounts :: DB ([Entity User], [Entity Owner], [Entity Account])
+makeAccounts :: DB ( [Entity User]
+                   , [Entity EmailVerification]
+                   , [Entity Owner]
+                   , [Entity Account]
+                   )
 makeAccounts =
-  unzip3 <$>
+  unzip4 <$>
   sequenceA [ makeAccount chrisEmail "Chris Allen" chrisPassword
             , makeAccount alexeyEmail "Alexey" alexeyPassword
             ]
 
 makeUser :: Email -> Text -> Text -> DB (Entity User)
 makeUser email' name pass = do
-  createUser email' name pass
+  (entityUser, emailVerification) <- createUser email' name pass
+  -- TODO: auto-verify?
+  return entityUser
 
 makeUsers :: DB [Entity User]
 makeUsers =
@@ -158,7 +176,7 @@ futureTime = Just $ UTCTime (fromGregorian 2019 1 1) 0
 
 insertFixtures :: DB Fixtures
 insertFixtures = do
-  (accountUsersF, allOwnersF, allAccountsF) <- makeAccounts
+  (accountUsersF, allEmailVerificationsF, allOwnersF, allAccountsF) <- makeAccounts
   plainUsersF <- makeUsers
   let allUsersF = accountUsersF <> plainUsersF
       chrisAccount = unsafeIdx allAccountsF 0
@@ -243,6 +261,7 @@ insertFixtures = do
 
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF
       userF = UserFixtures {..}
+      emailVerificationF = EmailVerificationFixtures {..}
       ownerF = OwnerFixtures {..}
       accountF = AccountFixtures {..}
       conferenceF = ConferenceFixtures {..}

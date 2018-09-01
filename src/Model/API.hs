@@ -13,7 +13,7 @@ import Database.Esqueleto.Internal.Sql as Export (SqlQuery)
 import Model as Export
 
 import Data.Time.Clock
-import Data.UUID (toByteString)
+import Data.UUID (UUID, toByteString)
 import Data.UUID.V4 (nextRandom)
 import qualified Data.ByteString.Base64 as B64 (encode)
 import qualified Database.Persist as P
@@ -159,13 +159,36 @@ defaultCreateUser userEmail userName = do
       userVerifiedAt = Nothing
   return $ User{..}
 
-createUser :: Email -> Text -> Text -> DB (Entity User)
+createUser :: Email -> Text -> Text -> DB (Entity User, Entity EmailVerification)
 createUser email name pass = do
   newUser <- liftIO $ defaultCreateUser email name
   userId <- insert newUser
   hash <- liftIO $ hashPassword pass
   _ <- insert (Password hash userId)
-  return (Entity userId newUser)
+  emailVerification <- createEmailVerification userId
+  return (Entity userId newUser, emailVerification)
+
+createEmailVerification :: UserId -> DB (Entity EmailVerification)
+createEmailVerification userId = do
+  uuid <- liftIO nextRandom
+  t <- liftIO getCurrentTime
+  insertEntity $ EmailVerification uuid t userId
+
+verifyEmail :: UUID -> DB (Maybe ())
+verifyEmail uuid = do
+  emailVerificationM <- getRecByField EmailVerificationUuid uuid
+  case emailVerificationM of
+    Nothing -> do
+      -- ????
+      return Nothing
+    (Just ev) -> do
+      setUserVerified ev
+      P.delete (entityKey ev)
+      return (Just ())
+  where setUserVerified :: Entity EmailVerification -> DB ()
+        setUserVerified (Entity _ ev) = do
+          t <- liftIO getCurrentTime
+          P.update (emailVerificationUser ev) [UserVerifiedAt P.=. Just t]
 
 getUserByResetToken :: Token -> DB (Maybe (Entity User))
 getUserByResetToken token =
@@ -212,12 +235,16 @@ createOwner userKey = do
 createAccount :: Email
               -> Text
               -> Text
-              -> DB (Entity User, Entity Owner, Entity Account)
+              -> DB ( Entity User
+                    , Entity EmailVerification
+                    , Entity Owner
+                    , Entity Account
+                    )
 createAccount email name pass = do
-  user <- createUser email name pass
+  (user, emailVerification) <- createUser email name pass
   owner <- createOwner (entityKey user)
   account <- insertEntity $ Account (entityKey owner)
-  return (user, owner, account)
+  return (user, emailVerification, owner, account)
 
 --------------------------------------------------------------------------------
 -- Conferences

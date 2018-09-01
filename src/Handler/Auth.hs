@@ -4,6 +4,7 @@ import Import
 
 import Handler.Auth.Forms
 import Handler.Auth.Views
+import qualified Network.HTTP.Types.Status as H
 
 redirectIfLoggedIn :: (RedirectUrl App r) => r -> Handler ()
 redirectIfLoggedIn r = do
@@ -18,7 +19,12 @@ requireUser = do
   case maybeUser of
     Nothing -> do
       $logWarn "No user session active"
-      redirect HomeR -- LoginR
+      renderErrorPage H.status401 $ \ maybeCurrentRoute -> [whamlet|
+        <h1>Not Authorized
+        <h3>You must be logged in to access this page, please login then try again.
+        $maybe currentRoute <- maybeCurrentRoute
+          <p>You tried to access: <a href="@{currentRoute}">@{currentRoute}</a>
+      |]
     (Just user) -> return user
 
 requireVerifiedUser :: Handler (Entity User)
@@ -27,7 +33,13 @@ requireVerifiedUser = do
   case userVerifiedAt (entityVal user) of
     Nothing -> do
       $logWarn "User not verified"
-      permissionDenied "You must have verified your email address to access this page."
+      renderErrorPage H.status401 $ \ maybeCurrentRoute -> [whamlet|
+        <h1>Not Authorized
+        <h3>You must have verified your email address to access this page.
+        <p>Please verify your email address and then try again.
+        $maybe currentRoute <- maybeCurrentRoute
+          <p>You tried to access: <a href="@{currentRoute}">@{currentRoute}</a>
+      |]
     (Just _) -> return user
 
 requireOwner :: Handler (Entity User, Entity Owner)
@@ -108,7 +120,7 @@ requireAdminForConference
   :: ConferenceId
   -> Handler (Entity User, Entity Conference)
 requireAdminForConference conferenceId = do
-  user <- requireUser
+  user <- requireVerifiedUser
   mConf <- runDB (getOwnerForConference conferenceId)
   case mConf of
     Nothing -> do
@@ -151,6 +163,11 @@ postLoginR = do
               redirect HomeR
     _ -> renderLogin widget ["Form failed validation"]
 
+getVerifyR :: UUID -> Handler Html
+getVerifyR token = do
+  runDBOr404 $ verifyEmail token
+  renderVerify
+
 getSignupR :: Handler Html
 getSignupR = do
   redirectIfLoggedIn HomeR
@@ -169,8 +186,9 @@ postSignupR = do
           (Just _) ->
             return Nothing
           Nothing -> do
-            (Entity dbUserKey _) <-
+            (Entity dbUserKey _, Entity _ emailVerification) <-
               createUser signupEmail signupName signupPassword
+            $logInfoSH (emailVerificationUuid emailVerification)
             return (Just dbUserKey)
       case dbUserKeyM of
         Nothing -> do

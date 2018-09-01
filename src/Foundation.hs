@@ -29,14 +29,6 @@ instance Yesod App where
         120    -- timeout in minutes
         "config/client_session_key.aes"
 
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-    errorHandler NotFound = undefined
-
     defaultLayout w = do
         p <- widgetToPageContent w
         msgs <- getMessages

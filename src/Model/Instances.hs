@@ -19,3 +19,7 @@ instance PersistField UUID where
 
 instance PersistFieldSql UUID where
   sqlType _ = SqlOther "uuid"
+
+instance PathPiece UUID where
+  fromPathPiece t = UUID.fromText t
+  toPathPiece s = UUID.toText s

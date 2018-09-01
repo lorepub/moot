@@ -23,6 +23,8 @@ import Network.HTTP.Client.Conduit as Import
 import Network.HTTP.Types as Import
 
 import Control.Error.Safe    as Import (justZ)
+import Control.Monad.Logger  as Import (logDebugSH, logInfoSH, logWarnSH, logErrorSH)
+import Data.UUID             as Import (UUID)
 import Database.Esqueleto    as Import hiding (selectFirst)
 import Database.Esqueleto.Internal.Sql as Import (SqlSelect)
 import Model                 as Import

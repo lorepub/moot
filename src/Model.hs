@@ -42,7 +42,7 @@ EmailVerification sql=email_verifications
   createdAt UTCTime
   user UserId
   UniqueUserEmailVerification user
-  deriving Show
+  deriving Eq Show
 
 Reset sql=resets
   token Token

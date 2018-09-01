@@ -5,5 +5,6 @@ module Import
 import AppType               as Import
 import Foundation            as Import
 import Handler.Sessions      as Import
+import Helpers.Handlers      as Import
 import Import.NoFoundation   as Import
 import Routes                as Import
