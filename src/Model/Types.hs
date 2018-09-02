@@ -5,6 +5,7 @@ module Model.Types where
 import ClassyPrelude.Yesod
 
 import Data.Fixed
+import Database.Esqueleto.Internal.Language (SqlString)
 import Database.Persist.Sql
 import qualified Helpers.Pandoc as Pandoc
 import Text.Email.Validate
@@ -56,6 +57,8 @@ instance PersistField Email where
   fromPersistValue v =
       Left
     $ [st|Got invalid PersistValue for Email, was: #{tshow v}|]
+
+instance SqlString Email
 
 newtype PasswordText =
   PasswordText Text

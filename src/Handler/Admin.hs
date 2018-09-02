@@ -4,6 +4,7 @@ import Import
 
 import Colonnade hiding (fromMaybe)
 import qualified Data.Map as M
+import qualified Text.Email.Validate as TEV
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
 
@@ -334,6 +335,9 @@ postConferenceCfpCloseR confId = do
 data CfpFilterForm =
   CfpFilterForm {
     filterAbstractTitle :: Maybe Text
+    -- This is intentionally not `Maybe Email`.
+  , filterAuthorEmail :: Maybe Text
+  , filterAuthorName :: Maybe Text
   , filterAbstractStatus :: Maybe Bool
   , filterAbstractType :: Maybe AbstractTypeId
   } deriving Show
@@ -354,13 +358,19 @@ cfpFilterForm abstractTypes = do
         CfpFilterForm
     <$> aopt textField (named "abstract-title"
                         (placeheld "CFP Title: ")) Nothing
+    -- We are intentionally not validating this as an email address
+    -- so that users can search for emails by fragments.
+    <*> aopt textField (named "author-email"
+                          (placeheld "Author Email: ")) Nothing
+    <*> aopt textField (named "author-name"
+                        (placeheld "Author Name: ")) Nothing
     <*> aopt (selectFieldList abstractStatusList)
              (named "abstract-status" (placeheld "Abstract status:")) Nothing
     <*> aopt (selectFieldList abstractTypeList)
              (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
 dummyCfpFilterForm :: CfpFilterForm
-dummyCfpFilterForm = CfpFilterForm Nothing Nothing Nothing
+dummyCfpFilterForm = CfpFilterForm Nothing Nothing Nothing Nothing Nothing
 
 ilikeVal :: ( SqlString s
             , PersistEntity val
@@ -377,12 +387,22 @@ genFilterConstraints :: (Esqueleto query expr backend)
                      => CfpFilterForm
                      -> expr (Entity AbstractType)
                      -> expr (Entity Abstract)
+                     -> expr (Entity User)
                      -> query ()
-genFilterConstraints CfpFilterForm{..} abstractType abstract = do
+genFilterConstraints CfpFilterForm{..} abstractType abstract user = do
   case filterAbstractTitle of
     Nothing -> return ()
     (Just "") -> return ()
     (Just title) -> where_ $ ilikeVal abstract AbstractAuthorTitle title
+  case filterAuthorEmail of
+    Nothing -> return ()
+    (Just email) ->
+      where_
+        $ ilikeVal user UserEmail (TEV.unsafeEmailAddress (encodeUtf8 email) "")
+  case filterAuthorName of
+    Nothing -> return ()
+    (Just "") -> return ()
+    (Just name) -> where_ $ ilikeVal user UserName name
   case filterAbstractStatus of
     Nothing -> return ()
     (Just v) -> where_ $ abstract ^. AbstractIsDraft ==. val v
@@ -418,7 +438,7 @@ getConferenceBlockedProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId
   let getAbstracts =
         select $
-          getAbstractsForConference'' (\ _ _ -> return ()) True confId
+          getAbstractsAndAuthorsForConference'' (\ _ _ _ -> return ()) True confId
   abstractList <- runDB getAbstracts
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstractList
   baseLayout Nothing $ do
@@ -448,12 +468,12 @@ getConferenceCallForProposalsR confId = do
     FormSuccess cfpFilterF -> return cfpFilterF
     _ -> return dummyCfpFilterForm
 
-  let filters abstractType abstract =
-        genFilterConstraints cfpFilterF abstractType abstract
+  let filters abstractType abstract user =
+        genFilterConstraints cfpFilterF abstractType abstract user
       getAbstracts =
         select $
           -- unblocked abstracts only
-          getAbstractsForConference'' filters False confId
+          getAbstractsAndAuthorsForConference'' filters False confId
   abstractList <- runDB getAbstracts
   abstractPages <- Page.paginate 20 abstractList
   let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
@@ -486,20 +506,27 @@ getConferenceCallForProposalsR confId = do
 colonnadeAbstracts :: ConferenceId
                    -> Colonnade
                       Headed
-                      (Entity Abstract, Entity AbstractType)
+                      (Entity Abstract, Entity User, Entity AbstractType)
                       (Cell App)
 colonnadeAbstracts confId =
   mconcat [
-    headed "Title" (cell . titleF . fst)
-  , headed "Submitted" (cell . abstractStatusF . fst)
-  , headed "Name" (textCell . abstractNameF . snd)
-  , headed "Content" (textCell . contentF . entityVal . fst)
+    headed "Title" (cell . titleF . fst')
+  , headed "Author Email" (textCell . authorEmailF . snd')
+  , headed "Author Name" (textCell . authorNameF . snd')
+  , headed "Submitted" (cell . abstractStatusF . fst')
+  , headed "Name" (textCell . abstractNameF . thrd')
+  , headed "Content" (textCell . contentF . entityVal . fst')
   ]
   where titleF (Entity abstractK abstract) =
           [whamlet|
           <a href=@{ConferenceAbstractR confId abstractK}>
             #{abstractTitle abstract}
           |]
+        authorEmailF :: Entity User -> Text
+        authorEmailF (Entity _ user) =
+          decodeUtf8 $ TEV.toByteString $ userEmail user
+        authorNameF (Entity _ user) =
+          userName user
         abstractStatusF (Entity _ abstract) =
           case abstractIsDraft abstract of
             False -> "Submitted"
@@ -512,6 +539,9 @@ colonnadeAbstracts confId =
              (abstractAuthorAbstract abstract)
              (abstractEditedAbstract abstract)
             ))
+        fst' (a, _, _) = a
+        snd' (_, b, _) = b
+        thrd' (_, _, c) = c
 
 data EditedAbstract =
   EditedAbstract {
