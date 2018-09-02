@@ -76,6 +76,9 @@ makeAccount :: Email
 makeAccount email' name pass = do
   createAccount email' name pass
 
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (a, b, c) = f a b c
+
 makeAccounts :: DB ( [Entity User]
                    , [Entity EmailVerification]
                    , [Entity Owner]
@@ -87,10 +90,15 @@ makeAccounts =
             , makeAccount alexeyEmail "Alexey" alexeyPassword
             ]
 
+verifyEmailEntity :: Entity EmailVerification -> DB ()
+verifyEmailEntity (Entity _ ev) = do
+  _ <- verifyEmail $ emailVerificationUuid ev
+  return ()
+
 makeUser :: Email -> Text -> Text -> DB (Entity User)
 makeUser email' name pass = do
   (entityUser, emailVerification) <- createUser email' name pass
-  -- TODO: auto-verify?
+  _ <- verifyEmailEntity emailVerification
   return entityUser
 
 makeUsers :: DB [Entity User]
@@ -154,8 +162,9 @@ Edited abstract 2
 makeAbstract' :: UserId
               -> AbstractTypeId
               -> Text
+              -> Bool
               -> Abstract
-makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle =
+makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle abstractIsDraft =
   let abstractAuthorAbstract = markdownifiedAbstractBody
       abstractEditedTitle = Nothing
       abstractEditedAbstract = Nothing
@@ -165,9 +174,10 @@ makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle =
 makeAbstract :: UserId
              -> AbstractTypeId
              -> Text
+             -> Bool
              -> DB (Entity Abstract)
-makeAbstract abstractUser abstractAbstractType abstractAuthorTitle =
-  insertEntity $ makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle
+makeAbstract abstractUser abstractAbstractType abstractAuthorTitle abstractIsDraft =
+  insertEntity $ makeAbstract' abstractUser abstractAbstractType abstractAuthorTitle abstractIsDraft
 
 pastTime :: Maybe UTCTime
 pastTime = Just $ UTCTime (fromGregorian 2017 1 1) 0
@@ -178,6 +188,8 @@ futureTime = Just $ UTCTime (fromGregorian 2019 1 1) 0
 insertFixtures :: DB Fixtures
 insertFixtures = do
   (accountUsersF, allEmailVerificationsF, allOwnersF, allAccountsF) <- makeAccounts
+  -- Go ahead and verify all the users created with makeAccounts
+  traverse_ verifyEmailEntity allEmailVerificationsF
   plainUsersF <- makeUsers
   let allUsersF = accountUsersF <> plainUsersF
       chrisAccount = unsafeIdx allAccountsF 0
@@ -230,28 +242,36 @@ insertFixtures = do
       secondConfSpamAbstractTypeK = entityKey secondConfSpamAbstractType
 
   chrisConfAbstracts <-
-    traverse (uncurry $ makeAbstract waddlesUserK)
+    traverse (uncurry3 $ makeAbstract waddlesUserK)
       [ ( theThingAbstractTypeK
         , "zygohistomorphic prepromorphisms and their malcontents"
+        , False
         )
       , ( crispAbstractTypeK
         , "crispy potato chips and their manifold destiny"
+        , False
         )
       , ( goldilocksAbstractTypeK
         , "Bananas, Lenses and Barbreh Strysend"
+        , False
         )
       ]
 
   secondConfSpamAbstracts <-
-    replicateM 750 (makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Spam spam spam!")
+    replicateM 750
+      (makeAbstract
+         waddlesUserK secondConfSpamAbstractTypeK
+         "Spam spam spam!" False)
 
   secondConfUniqueAbstract <-
-    makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique"
+    makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique" False
 
   _ <- addInactiveConferenceCode chrisFirstConfK (makeConferenceCode "ChrisOldCode")
 
   let secondConfBlockedAbstract' =
-        makeAbstract' waddlesUserK secondConfSpamAbstractTypeK "This was blocked"
+        makeAbstract'
+          waddlesUserK secondConfSpamAbstractTypeK
+          "This was blocked" False
   secondConfBlockedAbstract <-
     insertEntity (secondConfBlockedAbstract' { abstractBlocked = True } )
 

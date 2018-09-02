@@ -2,6 +2,7 @@ module Handler.Abstract where
 
 import Import
 
+import Data.Bitraversable
 import Handler.Auth
 import Helpers.Forms
 import Helpers.Handlers
@@ -117,21 +118,15 @@ import Helpers.Views
 
 data SubmittedAbstract =
   SubmittedAbstract {
-    submittedAbstractSpeaker :: Text
-  , submittedAbstractTitle :: Text
+    submittedAbstractTitle :: Text
   , submittedAbstractBody :: Textarea
   , submittedAbstractType :: AbstractTypeId
   } deriving Show
 
-data CreateAccount =
-  CreateAccount {
-    createAccountEmail :: Email
-  , createAccountName :: Text
-  , createAccountPassword :: Text
-  } deriving Show
-
-abstractForm :: [Entity AbstractType] -> Form SubmittedAbstract
-abstractForm abstractTypes = do
+abstractForm' :: [Entity AbstractType]
+              -> Maybe Abstract
+              -> Form SubmittedAbstract
+abstractForm' abstractTypes maybeAbstract = do
   let abstractTypeList :: [(Text, AbstractTypeId)]
       abstractTypeList =
         map
@@ -139,33 +134,34 @@ abstractForm abstractTypes = do
         abstractTypes
   renderDivs $
     SubmittedAbstract
-      <$> areq textField (named "speaker-name"
-                          (placeheld "Speaker's name:")) Nothing
-      <*> areq textField (named "abstract-title"
-                          (placeheld "Abstract title:")) Nothing
+      <$> areq textField (named "abstract-title"
+                          (placeheld "Abstract title:"))
+          (abstractTitle <$> maybeAbstract)
       <*> areq textareaField (named "abstract-body"
-                              (placeheld "Abstract proposal:")) Nothing
+                              (placeheld "Abstract proposal:"))
+          (Textarea . unMarkdown . abstractBody <$> maybeAbstract)
       <*> areq (selectFieldList abstractTypeList)
-               (named "abstract-type" (placeheld "Abstract type:")) Nothing
+               (named "abstract-type" (placeheld "Abstract type:"))
+          (abstractAbstractType <$> maybeAbstract)
 
-createAccountForm :: Form CreateAccount
-createAccountForm =
-  renderDivs $
-    CreateAccount
-      <$> areq emailField' (named "email"
-                           (placeheld "Email: ")) Nothing
-      <*> areq textField (named "name"
-                           (placeheld "Name: ")) Nothing
-      <*> areq passwordField (named "password"
-                              (placeheld "Password: ")) Nothing
+abstractForm :: [Entity AbstractType] -> Form SubmittedAbstract
+abstractForm abstractTypes =
+  abstractForm' abstractTypes Nothing
 
 renderSubmitAbstract :: Entity Conference
+                     -> Maybe AbstractId
                      -> Widget
                      -> Handler Html
 renderSubmitAbstract (Entity confId Conference{..})
+  maybeAbstractId
   submitAbstractForm = do
   welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
-  baseLayout Nothing $ [whamlet|
+  case maybeAbstractId of
+    Nothing ->
+      render welcomeMarkdown renderNew
+    (Just abstractId) ->
+      render welcomeMarkdown (renderUpdateExistingDraft abstractId)
+  where render welcomeMarkdown rest = baseLayout Nothing $ [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
     <div .medium-6 .cell>
@@ -173,8 +169,35 @@ renderSubmitAbstract (Entity confId Conference{..})
       <form method="POST"
             action="@{SubmitAbstractR confId}">
         ^{submitAbstractForm}
-        <input .button type="submit" value="Submit abstract">
+        <input .button.success
+         type="submit"
+         name="submit"
+         value="Submit abstract">
+        ^{rest}
 |]
+        renderNew = [whamlet|
+         <input .button
+          type="submit"
+          name="submit"
+          formaction="@{SubmitAbstractDraftR confId}"
+          value="Save draft">
+         <p>
+           If you submit the abstract now, that will make it the final version
+           and you will not be able to make further changes. If you wish to save
+           your abstract and finish writing it later, click "Save draft."
+        |]
+        renderUpdateExistingDraft abstractId = [whamlet|
+        <input .button
+         type="submit"
+         name="submit"
+         formaction="@{AbstractDraftR confId abstractId}"
+         value="Save draft">
+        <p>
+          You are viewing your draft submission to this conference. To save your
+          submission as a draft and continue editing later, click "Save draft."
+          If you are done with this submission and ready to submit,
+          click "Submit abstract."
+        |]
 
 getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
@@ -182,39 +205,125 @@ getSubmitAbstractR conferenceId = do
   abstractTypes <- runDB $ getAbstractTypes conferenceId
   conf <- runDBOr404 $ get conferenceId
   (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)
-  renderSubmitAbstract (Entity conferenceId conf) abstractWidget
+  renderSubmitAbstract (Entity conferenceId conf) Nothing abstractWidget
 
-postSubmitAbstractR :: ConferenceId -> Handler Html
-postSubmitAbstractR confId = do
+getConfAndAbstractTypes :: ConferenceId
+                        -> DB (Maybe (Entity Conference, [Entity AbstractType]))
+getConfAndAbstractTypes confId = do
+  maybeConf <- getConference confId
+  case maybeConf of
+    Nothing -> return Nothing
+    (Just conf) -> do
+      abstractTypes <- getAbstractTypes confId
+      return $ Just $ (conf, abstractTypes)
+
+handleUpdateAbstract :: ConferenceId
+                     -> AbstractId
+                     -> Bool
+                     -> Handler (Either
+                                 (Entity Conference, Widget)
+                                 (Entity Abstract))
+handleUpdateAbstract confId abstractId isDraft = do
   user <- requireVerifiedUser
-  (conf, abstractTypes) <- runDBOr404 $ do
-    maybeConf <- getConference confId
-    case maybeConf of
-      Nothing -> return Nothing
-      (Just conf) -> do
-        abstractTypes <- getAbstractTypes confId
-        return $ Just $ (conf, abstractTypes)
-
-  -- (maybeUser, createAccountWidget) <- handleCreateAccountOrLoggedIn
-  ((submittedAbstract, abstractWidget), _) <- runFormPost (abstractForm abstractTypes)
-
+  (conf, abstractTypes) <-
+    runDBOr404 $ getConfAndAbstractTypes confId
+  ((submittedAbstract, abstractWidget), _) <-
+    runFormPost (abstractForm abstractTypes)
   case submittedAbstract of
     FormSuccess
-      (SubmittedAbstract name title body abstractTypeId) -> do
-        abstractKey <- runDB $ do
+      (SubmittedAbstract title body abstractTypeId) -> do
+        abstract <- runDB $ do
+          abstractTuple <-
+            bisequenceA (get abstractTypeId, get abstractId)
+          case bisequenceA abstractTuple of
+            Nothing -> notFound
+            (Just (abstractType, abstract)) -> do
+              if abstractUser abstract == entityKey user
+                then do
+                  updateAbstract abstractId title body abstractTypeId
+                  return (Entity abstractId abstract)
+                else lift $ permissionDenied "This is not your abstract"
+        return $ Right abstract
+    _ -> return $ Left (conf, abstractWidget)
+  where updateAbstract :: AbstractId
+                       -> Text
+                       -> Textarea
+                       -> AbstractTypeId
+                       -> DB ()
+        updateAbstract abstractId title body abstractTypeId =
+          update $ \a -> do
+             set a [ AbstractAuthorTitle =. val title
+                   , AbstractAuthorAbstract =. val (Markdown (unTextarea body))
+                   , AbstractAbstractType =. val abstractTypeId
+                   ]
+             where_ (a ^. AbstractId ==. val abstractId)
+
+handleSaveAbstract :: ConferenceId
+                   -> Bool
+                   -> Handler (Either
+                               (Entity Conference, Widget)
+                               (Entity Abstract))
+handleSaveAbstract confId isDraft = do
+  user <- requireVerifiedUser
+  (conf, abstractTypes) <-
+    runDBOr404 $ getConfAndAbstractTypes confId
+  ((submittedAbstract, abstractWidget), _) <-
+    runFormPost (abstractForm abstractTypes)
+  case submittedAbstract of
+    FormSuccess
+      (SubmittedAbstract title body abstractTypeId) -> do
+        abstract <- runDB $ do
           maybeAbstractType <- get abstractTypeId
           case maybeAbstractType of
-            Nothing -> undefined
+            Nothing -> notFound
             (Just _) -> do
-              insert
+              insertEntity
                 (Abstract
                  (entityKey user)
                  title abstractTypeId
                  (Markdown (unTextarea body)) Nothing Nothing
-                 False
+                 False isDraft
                 )
-        redirect (SubmittedAbstractR confId)
-    _ -> renderSubmitAbstract conf abstractWidget
+        return $ Right abstract
+    _ -> return $ Left (conf, abstractWidget)
+
+postSubmitAbstractR :: ConferenceId -> Handler Html
+postSubmitAbstractR confId = do
+  abstractE <- handleSaveAbstract confId False
+  case abstractE of
+    (Left (conf, widget)) ->
+      renderSubmitAbstract conf Nothing widget
+    (Right _) ->
+      redirect (SubmittedAbstractR confId)
+
+postSubmitAbstractDraftR :: ConferenceId -> Handler Html
+postSubmitAbstractDraftR confId = do
+  abstractE <- handleSaveAbstract confId True
+  case abstractE of
+    (Left (conf, widget)) ->
+      renderSubmitAbstract conf Nothing widget
+    (Right abstract) ->
+      redirect (AbstractDraftR confId (entityKey abstract))
+
+getAbstractDraftR :: ConferenceId -> AbstractId -> Handler Html
+getAbstractDraftR confId abstractId = do
+  user <- requireVerifiedUser
+  conf <- runDBOr404 $ get confId
+  (abstractTypes, maybeAbstract) <- runDB $ do
+    abstractTypes <- getAbstractTypes confId
+    maybeAbstract <- get abstractId
+    return (abstractTypes, maybeAbstract)
+  (abstractWidget, _) <- generateFormPost (abstractForm' abstractTypes maybeAbstract)
+  renderSubmitAbstract (Entity confId conf) (Just abstractId) abstractWidget
+
+postAbstractDraftR :: ConferenceId -> AbstractId -> Handler Html
+postAbstractDraftR confId abstractId = do
+  abstractE <- handleUpdateAbstract confId abstractId True
+  case abstractE of
+    (Left (conf, widget)) ->
+      renderSubmitAbstract conf (Just abstractId) widget
+    (Right _) ->
+      getAbstractDraftR confId abstractId
 
 getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do

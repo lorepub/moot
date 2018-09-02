@@ -117,6 +117,7 @@ Abstract sql=abstracts
   editedTitle Text Maybe
   editedAbstract Markdown Maybe
   blocked Bool
+  isDraft Bool
   deriving Eq Show
 
 Slug sql=conference_slugs
