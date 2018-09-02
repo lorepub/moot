@@ -47,7 +47,7 @@ script:
   - stack test
 
 cache:
-  timeout: 2000
+  timeout: 4000
   directories:
   - $HOME/.cabal
   - $HOME/.ghc
