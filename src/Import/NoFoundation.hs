@@ -34,7 +34,6 @@ import Network.Api.Postmark  as Import hiding (Email, email)
 import Numeric.Natural       as Import
 import Settings              as Import
 import Settings.StaticFiles  as Import
-import Text.Email.Validate   as Import (EmailAddress)
 import Text.Shakespeare.Text as Import (st)
 import Yesod.Core.Types      as Import (loggerSet)
 import Yesod.Default.Config2 as Import

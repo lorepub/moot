@@ -46,22 +46,22 @@ data Fixtures =
   deriving (Eq, Show)
 
 chrisEmail :: Email
-chrisEmail = [email|chris@lol.com|]
+chrisEmail = Email "chris@lol.com"
 chrisPassword :: Text
 chrisPassword = "chrisPass"
 
 alexeyEmail :: Email
-alexeyEmail = [email|alexey@lol.com|]
+alexeyEmail = Email "alexey@lol.com"
 alexeyPassword :: Text
 alexeyPassword = "alexeyPass"
 
 waddlestonEmail :: Email
-waddlestonEmail = [email|waddleston@lol.com|]
+waddlestonEmail = Email "waddleston@lol.com"
 waddlestonPassword :: Text
 waddlestonPassword = "waddlesPass"
 
 doNothingEmail :: Email
-doNothingEmail = [email|nothing@lol.com|]
+doNothingEmail = Email "nothing@lol.com"
 doNothingPassword :: Text
 doNothingPassword = "nothingPass"
 

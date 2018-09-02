@@ -355,6 +355,33 @@ getAbstractsForConference'' constraints blocked conferenceId =
     where_ (abstract ^. AbstractBlocked ==. val blocked)
     pure (abstract, abstractType)
 
+getAbstractsAndAuthorsForConference''
+  :: ( FromPreprocess
+       query expr backend (expr (Entity AbstractType))
+     , FromPreprocess
+       query expr backend (expr (Entity Abstract))
+     , FromPreprocess
+       query expr backend (expr (Entity User))
+     )
+  => ( expr (Entity AbstractType)
+    -> expr (Entity Abstract)
+    -> expr (Entity User)
+    -> query ()
+     )
+  -> Bool
+  -> ConferenceId
+  -> query ( expr (Entity Abstract)
+           , expr (Entity User)
+           , expr (Entity AbstractType))
+getAbstractsAndAuthorsForConference'' constraints blocked conferenceId =
+  from $ \(abstractType `InnerJoin` abstract `InnerJoin` user) -> do
+    on (user ^. UserId ==. abstract ^. AbstractUser)
+    on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
+    where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
+    constraints abstractType abstract user
+    where_ (abstract ^. AbstractBlocked ==. val blocked)
+    pure (abstract, user, abstractType)
+
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
 updateAbstract abstractId title body = do
   update $ \a -> do
