@@ -1,5 +1,3 @@
-{-# LANGUAGE StrictData #-}
-
 module AppType where
 
 import Import.NoFoundation

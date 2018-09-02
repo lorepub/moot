@@ -2,6 +2,7 @@ module Handler.Abstract where
 
 import Import
 
+import Handler.Auth
 import Helpers.Forms
 import Helpers.Handlers
 import Helpers.Views
@@ -160,10 +161,9 @@ createAccountForm =
 
 renderSubmitAbstract :: Entity Conference
                      -> Widget
-                     -> Widget
                      -> Handler Html
 renderSubmitAbstract (Entity confId Conference{..})
-  submitAbstractForm createAccountForm = do
+  submitAbstractForm = do
   welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
   baseLayout Nothing $ [whamlet|
 <article .grid-container>
@@ -172,38 +172,21 @@ renderSubmitAbstract (Entity confId Conference{..})
       #{welcomeMarkdown}
       <form method="POST"
             action="@{SubmitAbstractR confId}">
-        ^{createAccountForm}
         ^{submitAbstractForm}
         <input .button type="submit" value="Submit abstract">
 |]
 
 getSubmitAbstractR :: ConferenceId -> Handler Html
 getSubmitAbstractR conferenceId = do
+  user <- requireVerifiedUser
   abstractTypes <- runDB $ getAbstractTypes conferenceId
   conf <- runDBOr404 $ get conferenceId
   (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)
-  (accountWidget', _) <- generateFormPost createAccountForm
-  maybeUser <- getUser
-  let accountWidget = maybe accountWidget' (const $ return ()) maybeUser
-  renderSubmitAbstract (Entity conferenceId conf) abstractWidget accountWidget
-
-handleCreateAccountOrLoggedIn :: Handler (Maybe (Entity User), Widget)
-handleCreateAccountOrLoggedIn = do
-  maybeUser <- getUser
-  ((acctData, widget), _) <- runFormPost createAccountForm
-  case maybeUser of
-    Just user ->
-      return $ (Just user, widget)
-    Nothing ->
-      case acctData of
-        FormSuccess
-          (CreateAccount email name password) -> do
-            user <- runDB $ createUser email name password
-            return $ (Just user, widget)
-        _ -> return $ (Nothing, widget)
+  renderSubmitAbstract (Entity conferenceId conf) abstractWidget
 
 postSubmitAbstractR :: ConferenceId -> Handler Html
 postSubmitAbstractR confId = do
+  user <- requireVerifiedUser
   (conf, abstractTypes) <- runDBOr404 $ do
     maybeConf <- getConference confId
     case maybeConf of
@@ -212,15 +195,13 @@ postSubmitAbstractR confId = do
         abstractTypes <- getAbstractTypes confId
         return $ Just $ (conf, abstractTypes)
 
-  (maybeUser, createAccountWidget) <- handleCreateAccountOrLoggedIn
+  -- (maybeUser, createAccountWidget) <- handleCreateAccountOrLoggedIn
   ((submittedAbstract, abstractWidget), _) <- runFormPost (abstractForm abstractTypes)
 
-  case (maybeUser, submittedAbstract) of
-    (Just user,
-     FormSuccess
-      (SubmittedAbstract name title body abstractTypeId)) -> do
+  case submittedAbstract of
+    FormSuccess
+      (SubmittedAbstract name title body abstractTypeId) -> do
         abstractKey <- runDB $ do
-          lift $ setUserSession (entityKey user) True
           maybeAbstractType <- get abstractTypeId
           case maybeAbstractType of
             Nothing -> undefined
@@ -233,7 +214,7 @@ postSubmitAbstractR confId = do
                  False
                 )
         redirect (SubmittedAbstractR confId)
-    _ -> renderSubmitAbstract conf abstractWidget createAccountWidget
+    _ -> renderSubmitAbstract conf abstractWidget
 
 getSubmittedAbstractR :: ConferenceId -> Handler Html
 getSubmittedAbstractR confId = do

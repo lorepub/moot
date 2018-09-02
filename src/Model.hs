@@ -17,9 +17,11 @@ module Model
 import ClassyPrelude.Yesod hiding ((==.), hash, on, selectFirst)
 
 import Control.Monad.Logger hiding (LoggingT, runLoggingT)
+import Data.UUID
 import Database.Esqueleto hiding (selectFirst)
 import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
 import Model.BCrypt as Export
+import Model.Instances ()
 import Model.Types as Export
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
@@ -27,12 +29,20 @@ User sql=users
   email Email sqltype=varchar(100)
   name Text sqltype=varchar(100)
   createdAt UTCTime
+  verifiedAt UTCTime Maybe
   UniqueUserEmail email
   deriving Eq Show
 
 Password sql=passwords
   hash BCrypt
   user UserId
+
+EmailVerification sql=email_verifications
+  uuid UUID
+  createdAt UTCTime
+  user UserId
+  UniqueUserEmailVerification user
+  deriving Eq Show
 
 Reset sql=resets
   token Token

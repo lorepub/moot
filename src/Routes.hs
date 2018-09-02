@@ -7,17 +7,18 @@ import Import.NoFoundation
 import AppType
 
 mkYesodData "App" [parseRoutes|
-/static StaticR Static appStatic
+/static       StaticR Static appStatic
 
-/           HomeR    GET
+/             HomeR    GET
 
 -- Auth
-/login      LoginR   GET POST
-/signup     SignupR  GET POST
-/signout    SignoutR GET
-/contact    ContactR GET
-/forgot     ForgotR  GET POST
-/reset      ResetR   GET POST
+/login        LoginR   GET POST
+/signup       SignupR  GET POST
+/verify/#UUID VerifyR  GET
+/signout      SignoutR GET
+/contact      ContactR GET
+/forgot       ForgotR  GET POST
+/reset        ResetR   GET POST
 
 -- Admin
 /organizer/signup                                        OrganizerSignupR GET POST

@@ -3,7 +3,7 @@ module Helpers.Email where
 import Import
 
 import qualified Network.Api.Postmark as Postmark
-import Text.Blaze.Html.Renderer.Text
+import Text.Blaze.Renderer.Text
 
 type PostmarkToken = Text
 
@@ -25,9 +25,21 @@ mootDefaultEmail subject html addressees =
         , emailReplyTo = "support@mootapp.com"
         }
 
+mootVerificationEmail :: (Route App -> Text)
+                      -> Text
+                      -> UUID
+                      -> Postmark.Email
+mootVerificationEmail urlRenderer addressee token =
+  mootDefaultEmail "Moot: Email Verification required" emailHtml [addressee]
+  where emailHtml = toStrict $ renderMarkup $ [shamlet|
+        <h1>Moot
+        <p>Thanks for signing up with Moot!
+        <p>To begin using Moot, <a href="#{urlRenderer $ VerifyR token}">click here to activate your account.</a> If you did not create this account, tell us!
+        |]
+
 -- mootPasswordResetEmail :: Text
 --                        -> UUID
---                        -> Email
+--                        -> Postmark.Email
 -- mootPasswordResetEmail addressee token =
 --   mootDefaultEmail "Moot: Password Reset request" resetHtml [addressee]
 --   where resetHtml = toStrict $ renderMarkup [shamlet|

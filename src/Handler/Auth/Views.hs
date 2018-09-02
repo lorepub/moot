@@ -3,6 +3,8 @@ module Handler.Auth.Views where
 import Import
 
 import Helpers.Views
+import qualified Network.HTTP.Types.Status as H
+import Yesod.Core.Types
 
 mediumContainer :: Widget -> Widget
 mediumContainer widget = [whamlet|
@@ -21,6 +23,17 @@ formErrorWidget formErrors = [whamlet|
         <i class="fi-alert"></i>
         $forall errMsg <- formErrors
           <span.error>#{errMsg}
+|]
+
+renderVerify :: Handler Html
+renderVerify = do
+  baseLayout Nothing $ do
+    setTitle "Verified!"
+    mediumContainer $ [whamlet|
+      <h1>You have successfully verified your account!
+      <div>
+        <p>
+          <a href="/">Click here to go home
 |]
 
 renderSignup :: Widget -> [Text] -> Handler Html
@@ -91,4 +104,15 @@ renderNotice header messages = do
               $forall msg <- messages
                 <span>#{msg}
 |]
+
+renderErrorPage :: H.Status -> (Maybe (Route App) -> Widget) -> Handler a
+renderErrorPage statusCode widget = do
+  currentRoute <- getCurrentRoute
+  html <- mhtml currentRoute
+  liftIO $ throwIO $ HCContent statusCode (toTypedContent html)
+  where mhtml currentRoute =
+          baseLayout Nothing $ do
+            mediumContainer $ [whamlet|
+              ^{widget currentRoute}
+            |]
 
