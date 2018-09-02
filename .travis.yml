@@ -43,8 +43,8 @@ before_script:
 script:
   - stack setup
   - stack update
-  - stack build
-  - stack test
+  - stack build --fast -j1
+  - stack test --fast
 
 cache:
   timeout: 4000
