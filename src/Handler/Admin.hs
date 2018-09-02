@@ -398,7 +398,7 @@ genFilterConstraints CfpFilterForm{..} abstractType abstract user = do
     Nothing -> return ()
     (Just email) ->
       where_
-        $ ilikeVal user UserEmail (TEV.unsafeEmailAddress (encodeUtf8 email) "")
+        $ ilikeVal user UserEmail (Email email)
   case filterAuthorName of
     Nothing -> return ()
     (Just "") -> return ()
@@ -422,14 +422,14 @@ blockUnBlockAbstract confId abstractId action = do
   redirect $ ConferenceAbstractR confId abstractId
 
 postConferenceBlockAbstractR :: ConferenceId
-                            -> AbstractId
-                            -> Handler Html
+                             -> AbstractId
+                             -> Handler Html
 postConferenceBlockAbstractR confId abstractId = do
   blockUnBlockAbstract confId abstractId blockAbstract
 
 postConferenceUnblockAbstractR :: ConferenceId
-                            -> AbstractId
-                            -> Handler Html
+                               -> AbstractId
+                               -> Handler Html
 postConferenceUnblockAbstractR confId abstractId = do
   blockUnBlockAbstract confId abstractId unblockAbstract
 
@@ -524,7 +524,7 @@ colonnadeAbstracts confId =
           |]
         authorEmailF :: Entity User -> Text
         authorEmailF (Entity _ user) =
-          decodeUtf8 $ TEV.toByteString $ userEmail user
+          unEmail $ userEmail user
         authorNameF (Entity _ user) =
           userName user
         abstractStatusF (Entity _ abstract) =

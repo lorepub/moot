@@ -13,4 +13,7 @@ database:
 
 postmarkToken: "_env:POSTMARK_TOKEN:POSTMARK_API_TEST"
 
+# In case I need query logging
+# should-log-all: true
+
 copyright: 2018, Chris Allen

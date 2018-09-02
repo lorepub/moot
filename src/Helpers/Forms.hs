@@ -26,39 +26,26 @@ placeheld label = placeholder label ""
 rows :: Text -> FieldSettings master -> FieldSettings master
 rows r f = f { fsAttrs = ("rows", r) : fsAttrs f }
 
-emailFromField :: Text -> Either FormMessage EmailAddress
+emailFromText :: Text -> Either Text Email
+emailFromText t =
+  case TEV.validate (encodeUtf8 t) of
+    (Left err) -> Left $ pack err
+    (Right _) ->
+      Right $ Email t
+
+emailFromField :: Text -> Either FormMessage Email
 emailFromField e =
-    case TEV.validate (encodeUtf8 e) of
+    case emailFromText e of
         (Left _) -> Left (MsgInvalidEntry "Not a valid email")
         (Right email') -> Right email'
 
 emailField' :: (Monad m, RenderMessage (HandlerSite m) FormMessage )
-            => Field m EmailAddress
+            => Field m Email
 emailField' =
     checkMMap
-        (return . mungeError . TEV.validate . encodeUtf8)
-        (decodeUtf8 . TEV.toByteString)
+        (return . emailFromText)
+        unEmail
         emailField
-  where
-    mungeError (Left a) = Left $ T.pack a
-    mungeError (Right a) = Right a
-
--- <form>
---   <div class="grid-container">
---     <div class="grid-x grid-padding-x">
---       <div class="medium-6 cell">
---         <label>Input Label
---           <input type="text" placeholder=".medium-6.cell">
---         </label>
---       </div>
---       <div class="medium-6 cell">
---         <label>Input Label
---           <input type="text" placeholder=".medium-6.cell">
---         </label>
---       </div>
---     </div>
---   </div>
--- </form>
 
 renderCard :: Monad m => Text -> FormRender m a
 renderCard buttonMsg aform fragment = do

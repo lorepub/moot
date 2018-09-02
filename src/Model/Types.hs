@@ -46,14 +46,17 @@ data E10
 instance HasResolution E10 where
     resolution _ = 10000000000
 
-type Email = EmailAddress
+newtype Email =
+  Email { unEmail :: Text }
+  deriving (Eq, Show)
 
 instance PersistField Email where
-  toPersistValue email =
-    PersistText $ decodeUtf8 $ toByteString email
+  toPersistValue (Email email) = PersistText email
   fromPersistValue (PersistText email) =
-      first pack
-    $ validate (encodeUtf8 email)
+    case validate (encodeUtf8 email) of
+      (Left err) -> Left $ pack err
+      (Right _) ->
+        Right $ Email email
   fromPersistValue v =
       Left
     $ [st|Got invalid PersistValue for Email, was: #{tshow v}|]
