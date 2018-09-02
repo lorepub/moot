@@ -334,6 +334,7 @@ postConferenceCfpCloseR confId = do
 data CfpFilterForm =
   CfpFilterForm {
     filterAbstractTitle :: Maybe Text
+  , filterAbstractStatus :: Maybe Bool
   , filterAbstractType :: Maybe AbstractTypeId
   } deriving Show
 
@@ -344,15 +345,22 @@ cfpFilterForm abstractTypes = do
         map
         renderAbstractTypeDropdown
         abstractTypes
+      abstractStatusList :: [(Text, Bool)]
+      abstractStatusList =
+        [ ("Draft", True)
+        , ("Submitted", False)
+        ]
   renderDivs $
         CfpFilterForm
     <$> aopt textField (named "abstract-title"
                         (placeheld "CFP Title: ")) Nothing
+    <*> aopt (selectFieldList abstractStatusList)
+             (named "abstract-status" (placeheld "Abstract status:")) Nothing
     <*> aopt (selectFieldList abstractTypeList)
              (named "abstract-type" (placeheld "Abstract type:")) Nothing
 
 dummyCfpFilterForm :: CfpFilterForm
-dummyCfpFilterForm = CfpFilterForm Nothing Nothing
+dummyCfpFilterForm = CfpFilterForm Nothing Nothing Nothing
 
 ilikeVal :: ( SqlString s
             , PersistEntity val
@@ -375,6 +383,9 @@ genFilterConstraints CfpFilterForm{..} abstractType abstract = do
     Nothing -> return ()
     (Just "") -> return ()
     (Just title) -> where_ $ ilikeVal abstract AbstractAuthorTitle title
+  case filterAbstractStatus of
+    Nothing -> return ()
+    (Just v) -> where_ $ abstract ^. AbstractIsDraft ==. val v
   case filterAbstractType of
     Nothing -> return ()
     (Just abstractTypeKey) ->
@@ -480,6 +491,7 @@ colonnadeAbstracts :: ConferenceId
 colonnadeAbstracts confId =
   mconcat [
     headed "Title" (cell . titleF . fst)
+  , headed "Submitted" (cell . abstractStatusF . fst)
   , headed "Name" (textCell . abstractNameF . snd)
   , headed "Content" (textCell . contentF . entityVal . fst)
   ]
@@ -488,6 +500,10 @@ colonnadeAbstracts confId =
           <a href=@{ConferenceAbstractR confId abstractK}>
             #{abstractTitle abstract}
           |]
+        abstractStatusF (Entity _ abstract) =
+          case abstractIsDraft abstract of
+            False -> "Submitted"
+            True -> "Draft"
         abstractNameF (Entity _ abstractType) =
           abstractTypeName abstractType
         contentF abstract =
