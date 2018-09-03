@@ -17,6 +17,7 @@ import Data.UUID (UUID, toByteString)
 import Data.UUID.V4 (nextRandom)
 import qualified Data.ByteString.Base64 as B64 (encode)
 import qualified Database.Persist as P
+import qualified Database.Esqueleto.Internal.Language as Esq
 
 getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
 getOwnerForUser userId = getRecByField OwnerUser userId
@@ -374,13 +375,78 @@ getAbstractsAndAuthorsForConference''
            , expr (Entity User)
            , expr (Entity AbstractType))
 getAbstractsAndAuthorsForConference'' constraints blocked conferenceId =
+   getAbstractsAndAuthorsForConference''' constraints blocked conferenceId Nothing (,,)
+
+getAbstractsAndAuthorsForConferenceCnt
+  :: ( FromPreprocess
+       query expr backend (expr (Entity AbstractType))
+     , FromPreprocess
+       query expr backend (expr (Entity Abstract))
+     , FromPreprocess
+       query expr backend (expr (Entity User))
+     , Esqueleto query expr2 backend
+     )
+  => ( expr (Entity AbstractType)
+    -> expr (Entity Abstract)
+    -> expr (Entity User)
+    -> query ()
+     )
+  -> Bool
+  -> ConferenceId
+  -> query (expr2 (Esq.Value Int64))
+getAbstractsAndAuthorsForConferenceCnt constraints blocked conferenceId =
+   getAbstractsAndAuthorsForConference''' constraints blocked conferenceId Nothing (\_ _ _ -> Esq.countRows)
+
+getAbstractsAndAuthorsForConferencePage
+  :: ( FromPreprocess
+       query expr backend (expr (Entity AbstractType))
+     , FromPreprocess
+       query expr backend (expr (Entity Abstract))
+     , FromPreprocess
+       query expr backend (expr (Entity User))
+     )
+  => ( expr (Entity AbstractType)
+    -> expr (Entity Abstract)
+    -> expr (Entity User)
+    -> query ()
+     )
+  -> Bool
+  -> ConferenceId
+  -> OffsetAndLimit
+  -> query ( expr (Entity Abstract)
+           , expr (Entity User)
+           , expr (Entity AbstractType))
+getAbstractsAndAuthorsForConferencePage constraints blocked conferenceId offsetAndLimit =
+   getAbstractsAndAuthorsForConference''' constraints blocked conferenceId (Just offsetAndLimit) (,,)
+
+data OffsetAndLimit = OffsetAndLimit Int64 Int64
+
+getAbstractsAndAuthorsForConference'''
+  :: (FromPreprocess query expr backend (expr (Entity AbstractType)),
+      FromPreprocess query expr backend (expr (Entity Abstract)),
+      FromPreprocess query expr backend (expr (Entity User))) =>
+     (expr (Entity AbstractType)
+       -> expr (Entity Abstract) 
+       -> expr (Entity User) 
+       -> query a)
+     -> Bool
+     -> Key Conference
+     -> Maybe OffsetAndLimit
+     -> (expr (Entity Abstract) -> expr (Entity User) -> expr (Entity AbstractType) -> b)
+     -> query b
+getAbstractsAndAuthorsForConference''' constraints blocked conferenceId offsetAndLimit resultF =
   from $ \(abstractType `InnerJoin` abstract `InnerJoin` user) -> do
     on (user ^. UserId ==. abstract ^. AbstractUser)
     on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
     where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
     constraints abstractType abstract user
     where_ (abstract ^. AbstractBlocked ==. val blocked)
-    pure (abstract, user, abstractType)
+    _ <- case offsetAndLimit of 
+        Nothing -> pure ()
+        Just (OffsetAndLimit off lim) -> do
+               offset off
+               limit lim
+    pure (resultF abstract user abstractType)
 
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
 updateAbstract abstractId title body = do
