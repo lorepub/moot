@@ -36,6 +36,8 @@ The easiest way to contact me is to send a message to the email address [on my G
 
 [The current milestone is for CFP functionality](https://github.com/lorepub/moot/milestone/1). Some of the CFP milestone is general functionality needed for CFP features to be complete.
 
+## Docker Development Environment
+
 ## Database Setup
 
 ### Ubuntu 16.04 / 18.04

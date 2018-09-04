@@ -10,6 +10,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # ports:
-    #   - "3000:3000"
-    command: /bin/true
+    volumes:
+      - "./:/moot"
+    ports:
+      - "3000:3000"
+    command: ["sleep", "infinity"]

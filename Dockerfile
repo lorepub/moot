@@ -10,8 +10,10 @@ RUN stack --system-ghc --resolver=$LTS_SLUG --local-bin-path=/usr/local/bin inst
 
 WORKDIR /moot
 
+ENV HOME /moot
+
 COPY . .
 
-RUN stack build
+RUN make build
 
 CMD ["/usr/bin/make", "backend-watch"]
