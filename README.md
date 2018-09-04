@@ -1,19 +1,7 @@
 # WIP NOTES
 
 
-TODO investigate:
-`docker-compose run moot_app /bin/bash` this works for running a shell that can have devel/ghci
-subsequent shells will need to use docker exec; should this be combineed somehow?
-should the backend just be a `sleep` wrapper so that `make docker-shell` will just exec?
-`docker-compose exec` does exist; look into this (will Chris' other CLI affordances be OK for this?)
-
-TODO ensure documentation is OK
-- TODO make sure the docs mention needint to increase memory to "docker for mac"; others building may need this too. mention error 137
-
 TODO double-check that other commands work good in this context
-
-note: did a lot of googling, no good way to disable a svc in docker-compose, need to use a dummy command, eg as documented at:
-https://stackoverflow.com/questions/37254881/is-there-any-way-to-disable-a-service-in-docker-compose-yml
 
 # Moot
 
@@ -37,6 +25,15 @@ The easiest way to contact me is to send a message to the email address [on my G
 [The current milestone is for CFP functionality](https://github.com/lorepub/moot/milestone/1). Some of the CFP milestone is general functionality needed for CFP features to be complete.
 
 ## Docker Development Environment
+
+- You need to install Docker.
+  - Later, when you build `moot`, if you see out of memory errors, you may need to increase the memory allocated to Docker beyond the default.
+- Clone this repo.
+- Start up with `docker-compose up -d`
+- Create shell into moot app container with `make -f Makefile.docker docker-shell` to run commands in the docker environment (e.g. run `make backend-watch`, etc).
+- Create shell into postgres container with `make docker-pgshell` to do administrative things to postgresql environment.
+
+### Setting up DB
 
 ## Database Setup
 
