@@ -459,6 +459,9 @@ getConferenceBlockedProposalsR confId = do
       ^{ct}
 |]
 
+pageSize :: Num n => n
+pageSize = 20
+
 getConferenceCallForProposalsR :: ConferenceId -> Handler Html
 getConferenceCallForProposalsR confId = do
   (_, confEntity) <- requireAdminForConference confId
@@ -470,15 +473,27 @@ getConferenceCallForProposalsR confId = do
 
   let filters abstractType abstract user =
         genFilterConstraints cfpFilterF abstractType abstract user
-      getAbstracts =
+      getAbstractCnt =
+        selectFirst $
+          -- unblocked abstracts only
+          getAbstractsAndAuthorsForConferenceCnt filters False confId
+      getAbstractPages offs =
         select $
           -- unblocked abstracts only
-          getAbstractsAndAuthorsForConference'' filters False confId
-  abstractList <- runDB getAbstracts
-  abstractPages <- Page.paginate 20 abstractList
-  let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
+          getAbstractsAndAuthorsForConferencePage filters False confId (OffsetAndLimit offs pageSize)
+          
+  abstractCnt <-  fromMaybe 0 . fmap unValue <$> runDB getAbstractCnt
+   
+  -- | [0..(- 1)] is empty list
+  -- this approach uses row numbers as data passed to paginate
+  -- the actual records are then retrieved using offset
+  rowNumPages <- Page.paginate pageSize [0..(abstractCnt - 1)]
+  let perPageRowNums = Page.pageItems (Page.pagesCurrent rowNumPages)
+  abstracts <- case perPageRowNums of 
+           [] -> pure []
+           offs:_ -> runDB $ getAbstractPages offs
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
-      pages = Page.simple 20 abstractPages
+      pages = Page.simple pageSize rowNumPages
   baseLayout Nothing $ do
     setTitle "Call for Proposals"
     [whamlet|
@@ -494,7 +509,7 @@ getConferenceCallForProposalsR confId = do
       <input .button type="submit" value="Filter">
   <div .row>
     <div .medium-9 .column>
-      <h1>#{length abstractList} abstracts matching filters
+      <h1>#{abstractCnt} abstracts matching filters
   <div .row>
     <div .medium-9 .column>
       ^{ct}

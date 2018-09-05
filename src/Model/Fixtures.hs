@@ -258,10 +258,10 @@ insertFixtures = do
       ]
 
   secondConfSpamAbstracts <-
-    replicateM 750
-      (makeAbstract
+    forM ([1..750] :: [Int])
+      (\ i -> makeAbstract
          waddlesUserK secondConfSpamAbstractTypeK
-         "Spam spam spam!" False)
+         ("Spam spam spam! " ++ (pack . show $ i)) False)
 
   secondConfUniqueAbstract <-
     makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique" False
