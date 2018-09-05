@@ -439,7 +439,7 @@ getAbstractsAndAuthorsForConference''' constraints blocked conferenceId offsetAn
     on (user ^. UserId ==. abstract ^. AbstractUser)
     on (abstractType ^. AbstractTypeId ==. abstract ^. AbstractAbstractType)
     where_ (abstractType ^. AbstractTypeConference ==. val conferenceId)
-    constraints abstractType abstract user
+    _ <- constraints abstractType abstract user
     where_ (abstract ^. AbstractBlocked ==. val blocked)
     _ <- case offsetAndLimit of 
         Nothing -> pure ()

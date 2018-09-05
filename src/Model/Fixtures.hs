@@ -4,8 +4,6 @@ module Model.Fixtures where
 
 import Import
 
-import Text.Email.QuasiQuotation
-
 data UserFixtures =
   UserFixtures { allUsersF :: [Entity User] }
   deriving (Eq, Show)
