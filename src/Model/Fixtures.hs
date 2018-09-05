@@ -251,7 +251,7 @@ insertFixtures = do
         )
       , ( goldilocksAbstractTypeK
         , "Bananas, Lenses and Barbreh Strysend"
-        , False
+        , True
         )
       ]
 
