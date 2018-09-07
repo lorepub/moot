@@ -181,12 +181,25 @@ renderConferenceSubmission :: Entity Conference
                                , Entity Abstract
                                )]
                            -> Widget
-renderConferenceSubmission (Entity _ Conference{..}) abstractPairs = do
+renderConferenceSubmission (Entity confId Conference{..}) abstractPairs = do
+  let abstractStatus :: Abstract -> Text
+      abstractStatus abstr =
+        if abstractIsDraft abstr
+        then "Draft"
+        else "Submitted"
+      draftLink :: ConferenceId -> Entity Abstract -> Maybe (Route App)
+      draftLink confId (Entity abstractId abstract) =
+        if abstractIsDraft abstract
+        then Just $ AbstractDraftR confId abstractId
+        else Nothing
   [whamlet|
     <h5>My abstracts submitted to #{conferenceName}
     <ul>
-      $forall (Entity _ abstractType, Entity _ abstract) <- abstractPairs
-        <li>#{abstractAuthorTitle abstract} - #{renderAbstractType abstractType}
+      $forall (Entity _ abstractType, abs@(Entity _ abstract)) <- abstractPairs
+        $maybe link <- draftLink confId abs
+          <a href=@{link}><li>#{abstractStatus abstract}: #{abstractAuthorTitle abstract} - #{renderAbstractType abstractType}
+        $nothing
+          <li>#{abstractStatus abstract}: #{abstractAuthorTitle abstract} - #{renderAbstractType abstractType}
 |]
 
 renderAccountConferences :: Entity Account
