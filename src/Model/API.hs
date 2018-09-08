@@ -195,14 +195,17 @@ getUserByResetToken :: Token -> DB (Maybe (Entity User))
 getUserByResetToken token =
   selectFirst $
   from $ \(r, u) -> do
-  where_ (r ^. ResetUser ==. u ^. UserId &&. r ^. ResetToken ==. val token)
+  where_ (r ^. ResetUser ==. u ^. UserId)
+  where_ (r ^. ResetToken ==. val token)
   return u
 
 getUserPasswordByResetToken :: Token -> DB (Maybe (Entity User, Entity Password))
 getUserPasswordByResetToken token =
   selectFirst $
   from $ \(r, u, p) -> do
-  where_ (r ^. ResetUser ==. u ^. UserId &&. p ^. PasswordUser ==. u ^. UserId &&. r ^. ResetToken ==. val token)
+  where_ (r ^. ResetUser ==. u ^. UserId)
+  where_ (r ^. ResetToken ==. val token)
+  where_ (p ^. PasswordUser ==. u ^. UserId)
   return (u, p)
 
 resetUserPassword :: Token -> Text -> DB ()
