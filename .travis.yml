@@ -47,7 +47,7 @@ script:
   - stack test --fast
 
 cache:
-  timeout: 4000
+  timeout: 6000
   directories:
   - $HOME/.cabal
   - $HOME/.ghc

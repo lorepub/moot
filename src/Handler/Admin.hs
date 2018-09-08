@@ -4,13 +4,11 @@ import Import
 
 import Colonnade hiding (fromMaybe)
 import qualified Data.Map as M
-import qualified Text.Email.Validate as TEV
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
 
 import Handler.Auth
 import Helpers.Forms
-import Helpers.Handlers
 import Helpers.Views
 
 getOrganizerSignupR :: Handler Html
@@ -19,8 +17,8 @@ getOrganizerSignupR = undefined
 postOrganizerSignupR :: Handler Html
 postOrganizerSignupR = undefined
 
-getAdminR :: UserId -> Handler Html
-getAdminR userId = undefined
+-- getAdminR :: UserId -> Handler Html
+-- getAdminR userId = undefined
   -- User{..} <-
   --   runDBOr404 (get userId)
   -- let isOrIsNot :: Text
@@ -38,8 +36,8 @@ getAdminR userId = undefined
   --     <input .button type="submit" value="Ascend">
   --   |]
 
-postAdminR :: UserId -> Handler Html
-postAdminR userId = undefined
+-- postAdminR :: UserId -> Handler Html
+-- postAdminR userId = undefined
   -- runDB $ update userId [UserIsAdmin =. True]
   -- redirect $ AdminR userId
 
@@ -188,9 +186,9 @@ renderConferenceSubmission (Entity confId Conference{..}) abstractPairs = do
         then "Draft"
         else "Submitted"
       draftLink :: ConferenceId -> Entity Abstract -> Maybe (Route App)
-      draftLink confId (Entity abstractId abstract) =
+      draftLink confId' (Entity abstractId abstract) =
         if abstractIsDraft abstract
-        then Just $ AbstractDraftR confId abstractId
+        then Just $ AbstractDraftR confId' abstractId
         else Nothing
   [whamlet|
     <h5>My abstracts submitted to #{conferenceName}
