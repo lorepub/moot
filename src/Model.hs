@@ -122,7 +122,7 @@ Abstract sql=abstracts
 
 Slug sql=conference_slugs
   conference ConferenceId
-  code ConferenceCode
+  code ConferenceSlug
   UniqueSlugCode code
   active Bool
   deriving Eq Show

@@ -231,5 +231,5 @@ getSubmittedAbstractR confId = do
 -------------------------------------------------------
 -- Proof of concept slug versions
 -------------------------------------------------------
-getSubmittedAbstractPocR :: ConferenceCode -> Handler Html
-getSubmittedAbstractPocR = withConferenceCodeRedirect SubmittedAbstractPocR getSubmittedAbstractR
+getSubmittedAbstractPocR :: ConferenceSlug -> Handler Html
+getSubmittedAbstractPocR = withConferenceSlugRedirect SubmittedAbstractPocR getSubmittedAbstractR

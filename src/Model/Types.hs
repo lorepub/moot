@@ -118,17 +118,17 @@ renderMarkdown (Markdown md) = do
     Left err -> throwIO (PandocRenderingFailed err md)
     (Right html) -> return html
 
-newtype ConferenceCode = 
-  ConferenceCode { unConferenceCode :: Text }
+newtype ConferenceSlug = 
+  ConferenceSlug { unConferenceSlug :: Text }
   deriving (Eq, Show, Read, PathPiece, PersistField, PersistFieldSql)
 
 -- | So constructor can be treated as private
-makeConferenceCode :: Text -> ConferenceCode
-makeConferenceCode = ConferenceCode
+makeConferenceSlug :: Text -> ConferenceSlug
+makeConferenceSlug = ConferenceSlug
 
 -- | To be used with conference name. Removes blanks from it to make URL piece cleaner.
-defaultConferenceCode :: Text -> ConferenceCode
-defaultConferenceCode = makeConferenceCode . filter ( /= ' ')
+defaultConferenceSlug :: Text -> ConferenceSlug
+defaultConferenceSlug = makeConferenceSlug . filter ( /= ' ')
 
-displayConferenceCode :: ConferenceCode -> Text 
-displayConferenceCode = decodeUtf8 . urlEncode False . encodeUtf8 . unConferenceCode
+displayConferenceSlug :: ConferenceSlug -> Text 
+displayConferenceSlug = decodeUtf8 . urlEncode False . encodeUtf8 . unConferenceSlug

@@ -706,14 +706,20 @@ postConferenceAbstractR confId abstractId = do
 
 -------------------------------------------------------
 -- Proof of concept slug versions
--- Note to do a good job these should have used withConferenceCodeRedirect2 and 
--- withConferenceCodeStrict2 an I should have changed existing rendering functions 
--- (so they know ConferenceCode for form submission route)
+-- Note to do a good job these should have used withConferenceSlugRedirect2 and 
+-- withConferenceSlugStrict2 an I should have changed existing rendering functions 
+-- (so they know ConferenceSlug for form submission route)
 -------------------------------------------------------
-getConferenceAbstractPocR :: ConferenceCode -> AbstractId -> Handler Html
+getConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
 getConferenceAbstractPocR code abstractId = 
-   withConferenceCodeRedirect (\c -> ConferenceAbstractPocR c abstractId) (flip getConferenceAbstractR abstractId) code
+   withConferenceSlugRedirect (\c -> ConferenceAbstractPocR c abstractId) (flip getConferenceAbstractR abstractId) code
 
-postConferenceAbstractPocR :: ConferenceCode -> AbstractId -> Handler Html
+postConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
 postConferenceAbstractPocR code abstractId = 
-   withConferenceCodeStrict (flip postConferenceAbstractR abstractId) code
+   withConferenceSlugStrict (flip postConferenceAbstractR abstractId) code
+
+getConferenceSurrogateAbstractR :: ConferenceId -> Handler Html
+getConferenceSurrogateAbstractR confId = undefined
+
+postConferenceSurrogateAbstractR :: ConferenceId -> Handler Html
+postConferenceSurrogateAbstractR confId = undefined
