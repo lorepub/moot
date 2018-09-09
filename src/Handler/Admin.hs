@@ -238,6 +238,9 @@ getConferenceDashboardR confId = do
     <h5>
       <a href="@{ConferenceAbstractTypesR confId}">
         Abstract types
+    <h5>
+      <a href="@{ConferenceSurrogateAbstractR confId}">
+        Submit surrogate abstract on behalf of a speaker
   <div .medium-6>
     <div. .medium-3 .column>
       <form method=POST
@@ -718,8 +721,81 @@ postConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
 postConferenceAbstractPocR code abstractId = 
    withConferenceSlugStrict (flip postConferenceAbstractR abstractId) code
 
+data SubmittedSurrogateAbstract =
+  SubmittedSurrogateAbstract {
+    submittedSurrogateAbstractAuthor :: Text
+  , submittedSurrogateAbstractTitle :: Text
+  , submittedSurrogateAbstractBody :: Textarea
+  , submittedSurrogateAbstractType :: AbstractTypeId
+  } deriving Show
+
+surrogateAbstractForm' :: [Entity AbstractType]
+                       -> Maybe Abstract
+                       -> Form SubmittedSurrogateAbstract
+surrogateAbstractForm' abstractTypes maybeAbstract = do
+  let abstractTypeList :: [(Text, AbstractTypeId)]
+      abstractTypeList =
+        map
+        renderAbstractTypeDropdown
+        abstractTypes
+  renderDivs $
+    SubmittedSurrogateAbstract
+      <$> areq textField (named "abstract-author"
+                          (placeheld "Abstract author:"))
+          (tshow . abstractUser <$> maybeAbstract)
+      <*> areq textField (named "abstract-title"
+                          (placeheld "Abstract title:"))
+          (abstractTitle <$> maybeAbstract)
+      <*> areq textareaField (named "abstract-body"
+                              (placeheld "Abstract proposal:"))
+          (Textarea . unMarkdown . abstractBody <$> maybeAbstract)
+      <*> areq (selectFieldList abstractTypeList)
+               (named "abstract-type" (placeheld "Abstract type:"))
+          (abstractAbstractType <$> maybeAbstract)
+
+surrogateAbstractForm :: [Entity AbstractType] -> Form SubmittedSurrogateAbstract
+surrogateAbstractForm abstractTypes =
+  surrogateAbstractForm' abstractTypes Nothing
+
+renderSubmitSurrogateAbstract :: Entity Conference
+                              -> Maybe AbstractId
+                              -> Widget
+                              -> Handler Html
+renderSubmitSurrogateAbstract (Entity confId Conference{..})
+  maybeAbstractId
+  submitSurrogateAbstractForm = do
+  -- welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
+  -- case maybeAbstractId of
+  --   Nothing ->
+  --     render welcomeMarkdown renderNew
+  --   (Just abstractId) ->
+  --     render welcomeMarkdown (renderUpdateExistingDraft abstractId)
+  render
+  where render = baseLayout Nothing $ [whamlet|
+<article .grid-container>
+  <div .grid-x .grid-margin-x>
+    <div .medium-6 .cell>
+      <h5>You are submitting an abstract on behalf of a speaker
+      <p>Conference: #{conferenceName}
+  <div .grid-x .grid-margin-x>
+    <div .medium-6 .cell>
+      <form method="POST"
+            action="@{ConferenceSurrogateAbstractR confId}">
+        ^{submitSurrogateAbstractForm}
+        <input .button.success
+         type="submit"
+         name="submit"
+         value="Submit abstract">
+|]
+
 getConferenceSurrogateAbstractR :: ConferenceId -> Handler Html
-getConferenceSurrogateAbstractR confId = undefined
+getConferenceSurrogateAbstractR confId = do
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
+  abstractTypes <- runDB $ getAbstractTypes confId
+  conf <- runDBOr404 $ get confId
+  (abstractWidget, _) <- generateFormPost (surrogateAbstractForm abstractTypes)
+  renderSubmitSurrogateAbstract (Entity confId conf) Nothing abstractWidget
 
 postConferenceSurrogateAbstractR :: ConferenceId -> Handler Html
 postConferenceSurrogateAbstractR confId = undefined
