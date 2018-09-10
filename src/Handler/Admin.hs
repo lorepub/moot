@@ -3,6 +3,7 @@ module Handler.Admin where
 import Import
 
 import Colonnade hiding (fromMaybe)
+import qualified Data.Aeson as A
 import qualified Data.Map as M
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
@@ -721,18 +722,33 @@ postConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
 postConferenceAbstractPocR code abstractId = 
    withConferenceSlugStrict (flip postConferenceAbstractR abstractId) code
 
+getUserSearchR :: Text -> Handler A.Value
+getUserSearchR query = do
+  -- TODO: requireAdmin
+  _ <- requireVerifiedUser
+  users <-
+    runDB $
+      select $
+      from $ \ user -> do
+        -- TODO: lol this is a little gross
+        where_ $ ilikeVal user UserEmail (Email query)
+        limit 10
+        return user
+  return $ toJSON $ fmap (unEmail . userEmail . entityVal) users
+
 data SubmittedSurrogateAbstract =
   SubmittedSurrogateAbstract {
-    submittedSurrogateAbstractAuthor :: Text
+    submittedSurrogateAbstractAuthor :: Email
   , submittedSurrogateAbstractTitle :: Text
   , submittedSurrogateAbstractBody :: Textarea
   , submittedSurrogateAbstractType :: AbstractTypeId
   } deriving Show
 
 surrogateAbstractForm' :: [Entity AbstractType]
+                       -> Maybe Email
                        -> Maybe Abstract
                        -> Form SubmittedSurrogateAbstract
-surrogateAbstractForm' abstractTypes maybeAbstract = do
+surrogateAbstractForm' abstractTypes maybeEmail maybeAbstract = do
   let abstractTypeList :: [(Text, AbstractTypeId)]
       abstractTypeList =
         map
@@ -740,9 +756,10 @@ surrogateAbstractForm' abstractTypes maybeAbstract = do
         abstractTypes
   renderDivs $
     SubmittedSurrogateAbstract
-      <$> areq textField (named "abstract-author"
-                          (placeheld "Abstract author:"))
-          (tshow . abstractUser <$> maybeAbstract)
+      <$> areq emailRegisteredField
+          (named "abstract-author"
+           (placeheld "Abstract author:"))
+          maybeEmail
       <*> areq textField (named "abstract-title"
                           (placeheld "Abstract title:"))
           (abstractTitle <$> maybeAbstract)
@@ -752,10 +769,21 @@ surrogateAbstractForm' abstractTypes maybeAbstract = do
       <*> areq (selectFieldList abstractTypeList)
                (named "abstract-type" (placeheld "Abstract type:"))
           (abstractAbstractType <$> maybeAbstract)
+  where emailRegisteredField = checkM validateRegistered emailField'
+        validateRegistered email = do
+          maybeUser <- runDB $ getUserByEmail email
+          case maybeUser of
+            Nothing ->
+              return $
+              Left ("No user with this email address exists in the database" :: Text)
+            (Just (Entity _ User{..})) ->
+              return $ case userVerifiedAt of
+                Nothing -> Left "User hasn't yet verified their email address"
+                (Just _) -> Right email
 
 surrogateAbstractForm :: [Entity AbstractType] -> Form SubmittedSurrogateAbstract
 surrogateAbstractForm abstractTypes =
-  surrogateAbstractForm' abstractTypes Nothing
+  surrogateAbstractForm' abstractTypes Nothing Nothing
 
 renderSubmitSurrogateAbstract :: Entity Conference
                               -> Maybe AbstractId
@@ -764,14 +792,12 @@ renderSubmitSurrogateAbstract :: Entity Conference
 renderSubmitSurrogateAbstract (Entity confId Conference{..})
   maybeAbstractId
   submitSurrogateAbstractForm = do
-  -- welcomeMarkdown <- renderMarkdown conferenceCfpWelcome
-  -- case maybeAbstractId of
-  --   Nothing ->
-  --     render welcomeMarkdown renderNew
-  --   (Just abstractId) ->
-  --     render welcomeMarkdown (renderUpdateExistingDraft abstractId)
   render
-  where render = baseLayout Nothing $ [whamlet|
+  where render = baseLayout Nothing $ do
+          addStylesheet $ StaticR css_auto_complete_css
+          addScript $ StaticR js_auto_complete_min_js
+          addScript $ StaticR js_surrogate_autocomplete_js
+          [whamlet|
 <article .grid-container>
   <div .grid-x .grid-margin-x>
     <div .medium-6 .cell>
@@ -797,5 +823,58 @@ getConferenceSurrogateAbstractR confId = do
   (abstractWidget, _) <- generateFormPost (surrogateAbstractForm abstractTypes)
   renderSubmitSurrogateAbstract (Entity confId conf) Nothing abstractWidget
 
+data SurrogateSaveException =
+  NoUserWithEmailAddress Email
+  deriving Show
+
+instance Exception SurrogateSaveException
+
+handleSaveSurrogateAbstract :: ConferenceId
+                            -> Bool
+                            -> Handler (Either
+                                        (Entity Conference, Widget)
+                                        (Entity Abstract))
+handleSaveSurrogateAbstract confId isDraft = do
+  (Entity adminKey _, Entity _ conference) <-
+    requireAdminForConference confId
+  (conf, abstractTypes) <-
+    runDBOr404 $ getConfAndAbstractTypes confId
+  ((submittedAbstract, abstractWidget), _) <-
+    runFormPost (surrogateAbstractForm abstractTypes)
+  case submittedAbstract of
+    FormSuccess
+      (SubmittedSurrogateAbstract authorEmail title body abstractTypeId) -> do
+        abstract <- runDB $ do
+          maybeUser <- getUserByEmail authorEmail
+          case maybeUser of
+            -- We should never reach this,
+            -- the form pre-validated the email as being
+            -- a verified user already.
+            Nothing -> throwIO $ NoUserWithEmailAddress authorEmail
+            (Just (Entity userKey _)) -> do
+              maybeAbstractType <- get abstractTypeId
+              case maybeAbstractType of
+                Nothing -> notFound
+                (Just _) -> do
+                  abstractEntity <-
+                    insertEntity
+                      (Abstract
+                       userKey
+                       title abstractTypeId
+                       (Markdown (unTextarea body)) Nothing Nothing
+                       False isDraft
+                      )
+                  insertEntity $
+                    SurrogateAbstract (entityKey abstractEntity) adminKey
+                  return abstractEntity
+        return $ Right abstract
+    _ -> return $ Left (conf, abstractWidget)
+
 postConferenceSurrogateAbstractR :: ConferenceId -> Handler Html
-postConferenceSurrogateAbstractR confId = undefined
+postConferenceSurrogateAbstractR confId = do
+  abstractE <- handleSaveSurrogateAbstract confId False
+  case abstractE of
+    (Left (conf, widget)) ->
+      renderSubmitSurrogateAbstract conf Nothing widget
+    (Right (Entity abstractId _)) ->
+      redirect (ConferenceAbstractR confId abstractId)

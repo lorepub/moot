@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 var $    = require('gulp-load-plugins')();
 var exec = require('child_process').exec;
+var uglify = require('gulp-uglify');
 
 var sassPaths = [
   'node_modules/foundation-sites/scss',
@@ -34,4 +35,28 @@ var watchTargets = [
 
 gulp.task('default', watchTargets, function() {
   gulp.watch(['scss/**/*.scss'], watchTargets);
+});
+
+var autocompletePaths = [
+  'node_modules/autocomplete.js/dist'
+];
+
+gulp.task('css', function() {
+  gulp.start('bump-staticfiles');
+  return gulp.src('node_modules/js-autocomplete/auto-complete.css')
+    .pipe(
+      gulp.dest('../static/css')
+    );
+});
+
+gulp.task('js', function() {
+  gulp.start('bump-staticfiles');
+  return gulp.src([
+    'js/app.js',
+    'js/surrogate_autocomplete.js',
+    'node_modules/js-autocomplete/auto-complete.min.js'
+  ]).pipe(uglify())
+    .pipe(
+      gulp.dest('../static/js')
+    );
 });

@@ -8,7 +8,8 @@ baseLayout :: Maybe (Entity User)
 baseLayout _ content = do
   nav <- renderNav
   defaultLayout $ do
-    addScriptRemote "https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    -- We need AJAX here and there.
+    addScriptRemote "https://code.jquery.com/jquery-3.3.1.min.js"
     addScriptRemote "https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"
     addScript (StaticR js_app_js)
     addStylesheet (StaticR css_app_css)
