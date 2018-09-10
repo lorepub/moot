@@ -32,6 +32,8 @@ mkYesodData "App" [parseRoutes|
 /conference/#ConferenceId/abstract/#AbstractId           ConferenceAbstractR GET POST
 /conference/#ConferenceId/abstract/#AbstractId/block     ConferenceBlockAbstractR POST
 /conference/#ConferenceId/abstract/#AbstractId/unblock   ConferenceUnblockAbstractR POST
+/conference/#ConferenceId/surrogate/abstract             ConferenceSurrogateAbstractR GET POST
+/user/search/#Text                                       UserSearchR GET
 
 -- CFP submission
 /conference/#ConferenceId/cfp/submit                     SubmitAbstractR GET POST
@@ -40,7 +42,7 @@ mkYesodData "App" [parseRoutes|
 /conference/#ConferenceId/cfp/submitted                  SubmittedAbstractR GET
 
 -- Proof of concept slug based URLs
-/conference2/#ConferenceCode/cfp/submitted               SubmittedAbstractPocR GET
-/conference2/#ConferenceCode/abstract/#AbstractId        ConferenceAbstractPocR GET POST
+/conference2/#ConferenceSlug/cfp/submitted               SubmittedAbstractPocR GET
+/conference2/#ConferenceSlug/abstract/#AbstractId        ConferenceAbstractPocR GET POST
 
 |]

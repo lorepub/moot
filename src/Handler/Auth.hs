@@ -116,6 +116,10 @@ requireOwnerForConference conferenceId = do
           where_ (account ^. AccountOwner ==. val (entityKey owner))
           return (account, mConference)
 
+-- TODO: requireAdmin
+requireAdmin :: Handler (Entity User, Either (Entity Owner) (Entity Admin))
+requireAdmin = undefined
+
 requireAdminForConference
   :: ConferenceId
   -> Handler (Entity User, Entity Conference)

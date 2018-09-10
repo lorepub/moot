@@ -27,3 +27,5 @@ node_modules/
 yesod-devel/
 .hspec-failures
 ghcid.txt
+static/css
+static/js

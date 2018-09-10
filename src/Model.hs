@@ -120,9 +120,14 @@ Abstract sql=abstracts
   isDraft Bool
   deriving Eq Show
 
+SurrogateAbstract sql=surrogate_abstracts
+  abstract AbstractId
+  surrogate UserId
+  deriving Eq Show
+
 Slug sql=conference_slugs
   conference ConferenceId
-  code ConferenceCode
+  code ConferenceSlug
   UniqueSlugCode code
   active Bool
   deriving Eq Show

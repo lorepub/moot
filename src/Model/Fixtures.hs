@@ -123,7 +123,7 @@ makeConference accountId openingTime closingTime confName =
   createConferenceForAccount
     accountId confName
     "The coolest code conf"
-    (defaultConferenceCode confName)
+    (defaultConferenceSlug confName)
     (Markdown [st|
 # You are submitting to the best conf
 
@@ -264,7 +264,7 @@ insertFixtures = do
   secondConfUniqueAbstract <-
     makeAbstract waddlesUserK secondConfSpamAbstractTypeK "Unique" False
 
-  _ <- addInactiveConferenceCode chrisFirstConfK (makeConferenceCode "ChrisOldCode")
+  _ <- addInactiveConferenceSlug chrisFirstConfK (makeConferenceSlug "ChrisOldCode")
 
   let secondConfBlockedAbstract' =
         makeAbstract'

@@ -98,16 +98,6 @@ getSubmitAbstractR conferenceId = do
   (abstractWidget, _) <- generateFormPost (abstractForm abstractTypes)
   renderSubmitAbstract (Entity conferenceId conf) Nothing abstractWidget
 
-getConfAndAbstractTypes :: ConferenceId
-                        -> DB (Maybe (Entity Conference, [Entity AbstractType]))
-getConfAndAbstractTypes confId = do
-  maybeConf <- getConference confId
-  case maybeConf of
-    Nothing -> return Nothing
-    (Just conf) -> do
-      abstractTypes <- getAbstractTypes confId
-      return $ Just $ (conf, abstractTypes)
-
 handleUpdateAbstract :: ConferenceId
                      -> AbstractId
                      -> Handler (Either
@@ -231,5 +221,5 @@ getSubmittedAbstractR confId = do
 -------------------------------------------------------
 -- Proof of concept slug versions
 -------------------------------------------------------
-getSubmittedAbstractPocR :: ConferenceCode -> Handler Html
-getSubmittedAbstractPocR = withConferenceCodeRedirect SubmittedAbstractPocR getSubmittedAbstractR
+getSubmittedAbstractPocR :: ConferenceSlug -> Handler Html
+getSubmittedAbstractPocR = withConferenceSlugRedirect SubmittedAbstractPocR getSubmittedAbstractR
