@@ -3,7 +3,7 @@ package = moot
 stack_yaml = STACK_YAML="stack.yaml"
 stack = $(stack_yaml) stack
 
-build:
+build: frontend-build
 	$(stack) build $(package)
 
 build-fast:
