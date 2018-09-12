@@ -13,7 +13,7 @@ gulp.task('bump-staticfiles', function() {
 });
 
 gulp.task('sass', function() {
-  gulp.start('bump-staticfiles');
+  gulp.parallel('bump-staticfiles');
   return gulp.src('scss/app.scss')
     .pipe($.sass({
       includePaths: sassPaths,
@@ -33,7 +33,7 @@ var watchTargets = [
   'bump-staticfiles'
 ];
 
-gulp.task('default', watchTargets, function() {
+gulp.task('default', function() {
   gulp.watch(['scss/**/*.scss'], watchTargets);
 });
 
@@ -42,7 +42,7 @@ var autocompletePaths = [
 ];
 
 gulp.task('css', function() {
-  gulp.start('bump-staticfiles');
+  gulp.parallel('bump-staticfiles');
   return gulp.src('node_modules/js-autocomplete/auto-complete.css')
     .pipe(
       gulp.dest('../static/css')
@@ -50,7 +50,7 @@ gulp.task('css', function() {
 });
 
 gulp.task('js', function() {
-  gulp.start('bump-staticfiles');
+  gulp.parallel('bump-staticfiles');
   return gulp.src([
     'js/app.js',
     'js/surrogate_autocomplete.js',
