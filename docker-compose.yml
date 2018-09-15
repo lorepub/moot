@@ -6,7 +6,7 @@ services:
       - 'POSTGRES_USER=postgres'
       - 'POSTGRES_PASSWORD=TheSuperuserPassword'
 
-  moot_app:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
