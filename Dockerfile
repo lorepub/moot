@@ -2,18 +2,13 @@ FROM fpco/stack-build:lts-12.2
 
 ARG LTS_SLUG=lts-12.2
 
-RUN stack --system-ghc --resolver=$LTS_SLUG --local-bin-path=/usr/local/bin install \
-        yesod-bin && \
-    cd $HOME/.stack && \
-    find . -type f -not -path './snapshots/*/share/*' -exec rm '{}' \; && \
-    find . -type d -print0 |sort -rz |xargs -0 rmdir 2>/dev/null || true
+# setup node for building frontend
+WORKDIR /
+
+RUN curl -sL https://deb.nodesource.com/setup_8.x -o nodesource_setup.sh && \
+      bash nodesource_setup.sh && \
+      apt-get install -y nodejs
 
 WORKDIR /moot
 
 ENV HOME /moot
-
-COPY . .
-
-RUN make build
-
-CMD ["/usr/bin/make", "backend-watch"]
