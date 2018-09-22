@@ -33,3 +33,6 @@ static/js
 # files for docker development setup
 .stack/
 .bash_history
+.npm/
+.config/
+.local/
