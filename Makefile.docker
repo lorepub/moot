@@ -6,11 +6,11 @@ stack = $(stack_yaml) stack
 docker_backend = docker exec -it $$(docker-compose ps -q backend)
 docker_pg = docker exec -it $$(docker-compose ps -q postgres)
 
-ghcid:
-	$(stack) exec -- ghcid -c "stack ghci $(package):lib --test --ghci-options='-fobject-code -fno-warn-unused-do-bind' --main-is $(package):$(package)"
+build: frontend-build
+	$(stack) build $(package)
 
-dev-deps:
-	stack install ghcid
+frontend-build:
+	cd frontend && npm run-script build
 
 reset-database: destroy-create-db migration fixtures
 
@@ -49,4 +49,4 @@ docker-postgres-shell:
 docker-psql:
 	scripts/docker-pg-su-env.sh /usr/bin/psql moot_dev
 
-.PHONY : build build-dirty run install ghci test test-ghci ghcid dev-deps
+.PHONY: frontend-build build build-dirty run install ghci test test-ghci ghcid dev-deps
