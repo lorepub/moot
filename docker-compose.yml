@@ -1,0 +1,21 @@
+version: '3'
+services:
+  postgres:
+    image: 'postgres:10.5'
+    environment:
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_PASSWORD=TheSuperuserPassword'
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - "./:/moot"
+    ports:
+      - "3000:3000"
+    # re: sleep inifinity -- this development setup is designed to
+    # start up the app container, and then have `docker exec` shells that
+    # open a process in the container, which is then to be used to build and run the
+    # moop app server.
+    command: ["sleep", "infinity"]

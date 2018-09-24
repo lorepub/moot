@@ -1,0 +1,52 @@
+package = moot
+
+stack_yaml = STACK_YAML="stack.yaml"
+stack = $(stack_yaml) stack
+
+docker_backend = docker exec -it $$(docker-compose ps -q backend)
+docker_pg = docker exec -it $$(docker-compose ps -q postgres)
+
+build: frontend-build
+	$(stack) build $(package)
+
+frontend-build:
+	cd frontend && npm run-script build
+
+reset-database: destroy-create-db migration fixtures
+
+reset-data: truncate-tables fixtures
+
+drop-databases:
+	-scripts/docker-pg-su-env.sh /usr/bin/dropdb moot_dev
+	-scripts/docker-pg-su-env.sh /usr/bin/dropdb moot_test
+
+create-db-user: drop-databases
+	-scripts/docker-pg-su-env.sh /usr/bin/dropuser moot
+	scripts/docker-pg-su-env.sh /usr/bin/psql -c "CREATE USER moot password 'moot';"
+	scripts/docker-pg-su-env.sh /usr/bin/psql -c "ALTER USER moot WITH SUPERUSER;"
+
+destroy-create-db: drop-databases
+	scripts/docker-pg-su-env.sh /usr/bin/createdb -O moot moot_dev
+	scripts/docker-pg-su-env.sh /usr/bin/createdb -O moot moot_test
+
+recreate-db: create-db-user destroy-create-db
+
+migration: build
+	stack exec -- migration
+
+fixtures: build
+	stack exec -- fixtures
+
+truncate-tables: build
+	$(docker_backend) stack exec -- truncate
+
+docker-backend-shell:
+	$(docker_backend) /bin/bash
+
+docker-postgres-shell:
+	$(docker_pg) /bin/bash
+
+docker-psql:
+	scripts/docker-pg-su-env.sh /usr/bin/psql moot_dev
+
+.PHONY: frontend-build build build-dirty run install ghci test test-ghci ghcid dev-deps

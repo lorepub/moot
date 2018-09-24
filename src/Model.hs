@@ -19,10 +19,11 @@ import ClassyPrelude.Yesod hiding ((==.), hash, on, selectFirst)
 import Control.Monad.Logger hiding (LoggingT, runLoggingT)
 import Data.UUID
 import Database.Esqueleto hiding (selectFirst)
-import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool)
+import Database.Persist.Postgresql (ConnectionString, withPostgresqlPool, pgConnStr)
 import Model.BCrypt as Export
 import Model.Instances ()
 import Model.Types as Export
+import qualified Settings as S
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users
@@ -149,8 +150,7 @@ runMigrations :: DB ()
 runMigrations = runMigration migrateAll
 
 devConn :: ConnectionString
-devConn =
-  "dbname=moot_dev host=localhost user=moot password=moot port=5432"
+devConn = pgConnStr $ S.appDatabaseConf S.compileTimeAppSettings
 
 runDevDB :: DB a -> IO a
 runDevDB a =

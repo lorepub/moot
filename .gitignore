@@ -29,3 +29,10 @@ yesod-devel/
 ghcid.txt
 static/css
 static/js
+
+# files for docker development setup
+.stack/
+.bash_history
+.npm/
+.config/
+.local/

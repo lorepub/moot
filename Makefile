@@ -106,4 +106,10 @@ fixtures: build
 truncate-tables: build
 	stack exec -- truncate
 
+docker-shell:
+	docker exec -e COLUMNS="`tput cols`" -e LINES="`tput lines`" -it $$(docker-compose ps -q moot_app) /bin/bash -c "reset -w && /bin/bash"
+
+docker-pgshell:
+	docker exec -e COLUMNS="`tput cols`" -e LINES="`tput lines`" -it $$(docker-compose ps -q postgres) /bin/bash -c "reset -w && /bin/bash"
+
 .PHONY : build build-dirty run install ghci test test-ghci ghcid dev-deps

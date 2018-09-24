@@ -1,3 +1,8 @@
+# WIP NOTES
+
+
+TODO double-check that other commands work good in this context
+
 # Moot
 
 This is the home of Moot, a CFP and event management system. To learn more, please see the [slides for the launch announcement](https://github.com/bitemyapp/presentations/blob/master/moot/moot.pdf).
@@ -18,6 +23,25 @@ The easiest way to contact me is to send a message to the email address [on my G
 ### Current milestone
 
 [The current milestone is for CFP functionality](https://github.com/lorepub/moot/milestone/1). Some of the CFP milestone is general functionality needed for CFP features to be complete.
+
+## Docker Development Environment
+
+- Install Docker.
+  - Later, when you build `moot`, if you see out of memory errors, you may need to increase the memory allocated to Docker beyond the default.
+- Clone this repo
+- In `config/settings.yml`, change the postgres hostname from `localhost` to `postgres`:
+  - change this: `host:     "_env:PGHOST:localhost"`
+  - to this: `host:     "_env:PGHOST:postgres"`
+- Start up with `docker-compose up -d`
+- Run commands to set up container environment:
+  - `make deps`.
+  - `make -f Makefile.docker create-db-user`.
+  - `make -f Makefile.docker reset-database`.
+- Docker-specific `make` command docs:
+  - `make -f Makefile.docker docker-backend-shell` -- Create shell from host into in moot app backend container. Most development work can be done from this shell (e.g. run `backend-watch`, etc).
+  - `make -f Makefile.docker docker-postgres-shell` -- Create shell from host into postgres DB container (for administrative things, if needed).
+  - `make -f Makefile.docker docker-postgres-shell` -- Create shell in postgres DB container (for administrative things, if needed).
+  - `make -f Makefile.docker docker-psql` -- From within backend container, create psql shell for development.
 
 ## Database Setup
 
