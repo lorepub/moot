@@ -7,6 +7,7 @@ import qualified Data.Aeson as A
 import qualified Data.Map as M
 import Yesod.Colonnade
 import qualified Yesod.Paginator as Page
+import qualified Helpers.PaginateUtil as PageUtil
 
 import Handler.Auth
 import Helpers.Forms
@@ -488,27 +489,22 @@ getConferenceCallForProposalsR confId = do
 
   let filters abstractType abstract user =
         genFilterConstraints cfpFilterF abstractType abstract user
-      getAbstractCnt =
-        selectFirst $
-          -- unblocked abstracts only
-          getAbstractsAndAuthorsForConferenceCnt filters False confId
+      -- | unblocked abstracts only
+      getAbstractCnt = 
+        fmap (fromIntegral . fromMaybe 0 . fmap unValue) . selectFirst $
+           getAbstractsAndAuthorsForConferenceCnt filters False confId
       getAbstractPages offs =
         select $
           -- unblocked abstracts only
           getAbstractsAndAuthorsForConferencePage filters False confId (OffsetAndLimit offs pageSize)
-          
-  abstractCnt <-  fromMaybe 0 . fmap unValue <$> runDB getAbstractCnt
-   
-  -- | [0..(- 1)] is empty list
-  -- this approach uses row numbers as data passed to paginate
-  -- the actual records are then retrieved using offset
-  rowNumPages <- Page.paginate pageSize [0..(abstractCnt - 1)]
-  let perPageRowNums = Page.pageItems (Page.pagesCurrent rowNumPages)
-  abstracts <- case perPageRowNums of 
-           [] -> pure []
-           offs:_ -> runDB $ getAbstractPages offs
+             
+  (itemsCnt, abstractPages) <- runDB $ PageUtil.paginateCustom pageSize 
+                         getAbstractCnt
+                         (\pn -> getAbstractPages . fromIntegral . PageUtil.pageOffset pn $ pageSize)
+  let abstractCnt = fromIntegral itemsCnt :: Integer                      
+  let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
-      pages = Page.simple pageSize rowNumPages
+      pages = Page.simple pageSize abstractPages
   baseLayout Nothing $ do
     setTitle "Call for Proposals"
     [whamlet|
