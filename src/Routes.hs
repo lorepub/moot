@@ -16,6 +16,7 @@ mkYesodData "App" [parseRoutes|
 /signup       SignupR  GET POST
 /verify/#UUID VerifyR  GET
 /signout      SignoutR GET
+/about        AboutR   GET
 /contact      ContactR GET
 /forgot       ForgotR  GET POST
 /reset        ResetR   GET POST
