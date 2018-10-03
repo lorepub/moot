@@ -1,0 +1,21 @@
+image: registry.gitlab.com/lorepub/moot/moot-build-image:latest
+
+stages:
+  - build
+
+cache:
+  key: global-cache
+  # key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .stack-work/
+    - /root/.stack/
+
+build:
+  stage: build
+  script: |
+        npm link gulp
+        cd frontend && npm install
+        make build
+  tags:
+    - moot
