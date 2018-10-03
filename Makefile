@@ -106,10 +106,14 @@ fixtures: build
 truncate-tables: build
 	stack exec -- truncate
 
+build-image:
+	sudo docker build -t moot-build-image .
+	sudo docker tag moot-build-image:latest registry.gitlab.com/lorepub/moot/moot-build-image:latest
+
 docker-shell:
-	docker exec -e COLUMNS="`tput cols`" -e LINES="`tput lines`" -it $$(docker-compose ps -q moot_app) /bin/bash -c "reset -w && /bin/bash"
+	docker run -u 1000:1000 -v `pwd`:/builds/lorepub/moot -it moot-build-image /bin/bash
 
-docker-pgshell:
-	docker exec -e COLUMNS="`tput cols`" -e LINES="`tput lines`" -it $$(docker-compose ps -q postgres) /bin/bash -c "reset -w && /bin/bash"
+push-image:
+	sudo docker push registry.gitlab.com/lorepub/moot/moot-build-image
 
-.PHONY : build build-dirty run install ghci test test-ghci ghcid dev-deps
+.PHONY: build build-dirty run install ghci test test-ghci ghcid dev-deps build-image push-image
