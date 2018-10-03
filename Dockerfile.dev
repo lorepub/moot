@@ -11,6 +11,8 @@ RUN apt-get update && \
 
 RUN stack setup --resolver lts-12.2
 
+RUN stack install --resolver lts-12.2 alex happy
+
 RUN mkdir -p /builds/lorepub/moot
 WORKDIR /builds/lorepub/moot
 

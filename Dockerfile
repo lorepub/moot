@@ -11,6 +11,11 @@ RUN apt-get update && \
 
 RUN stack setup --resolver lts-12.2
 
+RUN stack install --resolver lts-12.2 alex happy
+
+RUN stack build --resolver lts-12.2 yesod lens lens-aeson pandoc bcrypt email-validate errors basic-prelude xml-types foreign-store QuickCheck base-compat unix-compat HTTP-4000 temporary cpphs iproute wai \
+ && stack clean
+
 RUN mkdir -p /builds/lorepub/moot
 WORKDIR /builds/lorepub/moot
 
