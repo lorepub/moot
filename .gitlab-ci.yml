@@ -14,8 +14,6 @@ cache:
 build:
   stage: build
   script: |
-        npm link gulp
-        cd frontend && npm install
         make build
   tags:
     - moot
