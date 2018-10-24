@@ -39,7 +39,6 @@ instance Yesod App where
 
     defaultLayout w = do
         p <- widgetToPageContent w
-        msgs <- getMessages
         let pt = pageTitle p
             title = case renderHtml pt of
                       "" -> "Moot"
@@ -52,8 +51,6 @@ instance Yesod App where
                     <title>#{title}
                     ^{pageHead p}
                 <body>
-                    $forall (status, msg) <- msgs
-                        <p class="message #{status}">#{msg}
                     ^{pageBody p}
             |]
 

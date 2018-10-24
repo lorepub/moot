@@ -105,10 +105,13 @@ postConferenceAbstractTypesR conferenceId = do
       abstractTypes <- runDB $ do
         void $
           insertEntity $
-          AbstractType (entityKey conference) name (makeTalkDuration duration)
+            AbstractType (entityKey conference) name (makeTalkDuration duration)
         getAbstractTypes (entityKey conference)
       renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
-    _ -> error "bluhhh"
+    err -> do
+      $logErrorSH err
+      abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
+      renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
 
 renderConferencesCallout :: [Entity Conference] -> Text -> Widget
 renderConferencesCallout [] _ = return ()
@@ -175,8 +178,6 @@ renderSubmitterConferences userId = do
 |]
 
 renderConferenceSubmission :: Entity Conference
-                           -- -> Entity AbstractType
-                           -- -> Entity Abstract
                            -> [( Entity AbstractType
                                , Entity Abstract
                                )]
@@ -243,6 +244,10 @@ getConferenceDashboardR confId = do
     <h5>
       <a href="@{ConferenceSurrogateAbstractR confId}">
         Submit surrogate abstract on behalf of a speaker
+    <h5>
+      <a href="@{ConferenceRolesR confId}">
+        Manage conference roles and invite new users
+
   <div .medium-6>
     <div. .medium-3 .column>
       <form method=POST

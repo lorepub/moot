@@ -25,6 +25,9 @@ mkYesodData "App" [parseRoutes|
 /organizer/signup                                        OrganizerSignupR GET POST
 /conferences                                             ConferencesR GET
 /conference/#ConferenceId                                ConferenceDashboardR GET
+/conference/#ConferenceId/roles                          ConferenceRolesR GET
+/conference/#ConferenceId/roles/invite                   ConferenceInviteRoleR GET POST
+/conference/#ConferenceId/roles/#UUID/accept             ConferenceAcceptRoleR GET
 /conference/#ConferenceId/cfp/open                       ConferenceCfpOpenR POST
 /conference/#ConferenceId/cfp/close                      ConferenceCfpCloseR POST
 /conference/#ConferenceId/abstract-types                 ConferenceAbstractTypesR GET POST

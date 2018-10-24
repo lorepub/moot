@@ -592,3 +592,13 @@ getConfAndAbstractTypes confId = do
     (Just conf) -> do
       abstractTypes <- getAbstractTypes confId
       return $ Just $ (conf, abstractTypes)
+
+createRoleInvitation :: ConferenceId
+                     -> Email
+                     -> Role
+                     -> DB (Entity RoleInvitation)
+createRoleInvitation confId email role = do
+  uuid <- liftIO nextRandom
+  now <- liftIO getCurrentTime
+  insertEntity $
+      RoleInvitation email confId role uuid now Nothing Nothing
