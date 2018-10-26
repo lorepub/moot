@@ -12,12 +12,16 @@ data EmailVerificationFixtures =
   EmailVerificationFixtures { allEmailVerificationsF :: [Entity EmailVerification] }
   deriving (Eq, Show)
 
-data OwnerFixtures =
-  OwnerFixtures { allOwnersF :: [Entity Owner] }
-  deriving (Eq, Show)
-
 data AccountFixtures =
   AccountFixtures { allAccountsF :: [Entity Account] }
+  deriving (Eq, Show)
+
+data AdminFixtures =
+  AdminFixtures { allAdminsF :: [Entity Admin] }
+  deriving (Eq, Show)
+
+data EditorFixtures =
+  EditorFixtures { allEditorsF :: [Entity Editor] }
   deriving (Eq, Show)
 
 data ConferenceFixtures =
@@ -35,7 +39,6 @@ data AbstractTypeFixtures =
 data Fixtures =
   Fixtures { userF :: UserFixtures
            , emailVerificationF :: EmailVerificationFixtures
-           , ownerF :: OwnerFixtures
            , accountF :: AccountFixtures
            , conferenceF :: ConferenceFixtures
            , abstractTypeF :: AbstractTypeFixtures
@@ -68,7 +71,6 @@ makeAccount :: Email
             -> Text
             -> DB ( Entity User
                   , Entity EmailVerification
-                  , Entity Owner
                   , Entity Account
                   )
 makeAccount email' name pass = do
@@ -79,11 +81,10 @@ uncurry3 f (a, b, c) = f a b c
 
 makeAccounts :: DB ( [Entity User]
                    , [Entity EmailVerification]
-                   , [Entity Owner]
                    , [Entity Account]
                    )
 makeAccounts =
-  unzip4 <$>
+  unzip3 <$>
   sequenceA [ makeAccount chrisEmail "Chris Allen" chrisPassword
             , makeAccount alexeyEmail "Alexey" alexeyPassword
             ]
@@ -185,7 +186,7 @@ futureTime = Just $ UTCTime (fromGregorian 2019 1 1) 0
 
 insertFixtures :: DB Fixtures
 insertFixtures = do
-  (accountUsersF, allEmailVerificationsF, allOwnersF, allAccountsF) <- makeAccounts
+  (accountUsersF, allEmailVerificationsF, allAccountsF) <- makeAccounts
   -- Go ahead and verify all the users created with makeAccounts
   traverse_ verifyEmailEntity allEmailVerificationsF
   plainUsersF <- makeUsers
@@ -283,7 +284,6 @@ insertFixtures = do
   let allConferencesF = chrisConferencesF ++ alexeyConferencesF
       userF = UserFixtures {..}
       emailVerificationF = EmailVerificationFixtures {..}
-      ownerF = OwnerFixtures {..}
       accountF = AccountFixtures {..}
       conferenceF = ConferenceFixtures {..}
       abstractTypeF = AbstractTypeFixtures {..}

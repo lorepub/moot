@@ -132,3 +132,21 @@ defaultConferenceSlug = makeConferenceSlug . filter ( /= ' ')
 
 displayConferenceSlug :: ConferenceSlug -> Text 
 displayConferenceSlug = decodeUtf8 . urlEncode False . encodeUtf8 . unConferenceSlug
+
+data Role =
+  EditorRole
+  -- | Reviewer
+  -- | Scheduler
+  deriving (Eq, Show)
+
+instance PersistField Role where
+  toPersistValue EditorRole = PersistText "editor"
+  fromPersistValue (PersistText role) =
+    case role of
+      "editor" -> return EditorRole
+      t ->
+          Left
+        $ [st|Got invalid text value for Role, was: #{tshow t}|]
+  fromPersistValue v =
+      Left
+    $ [st|Got invalid PersistValue for Role, was: #{tshow v}|]

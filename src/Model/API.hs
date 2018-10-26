@@ -19,18 +19,17 @@ import qualified Data.ByteString.Base64 as B64 (encode)
 import qualified Database.Persist as P
 import qualified Database.Esqueleto.Internal.Language as Esq
 
-getOwnerForUser :: UserId -> DB (Maybe (Entity Owner))
-getOwnerForUser userId = getRecByField OwnerUser userId
+getOwnerForUser :: UserId -> DB (Maybe (Entity Account))
+getOwnerForUser userId = getRecByField AccountOwner userId
 
-getAccountByOwner :: OwnerId -> DB (Maybe (Entity Account))
-getAccountByOwner ownerId = getRecByField AccountOwner ownerId
+-- getAccountByOwner :: OwnerId -> DB (Maybe (Entity Account))
+-- getAccountByOwner ownerId = getRecByField AccountOwner ownerId
 
 getAccountByUser :: UserId -> DB (Maybe (Entity Account))
 getAccountByUser userId = do
   selectFirst $
-    from $ \(account `InnerJoin` owner) -> do
-      on (account ^. AccountOwner ==. owner ^. OwnerId)
-      where_ (owner ^. OwnerUser ==. val userId)
+    from $ \(account) -> do
+      where_ (account ^. AccountOwner ==. val userId)
       return account
 
 getRecsByField' :: ( DBAll val typ backend
@@ -231,24 +230,17 @@ deleteExistingResets :: UserId -> DB ()
 deleteExistingResets userId = do
   deleteWhere [ResetUser P.==. userId]
 
-createOwner :: UserId -> DB (Entity Owner)
-createOwner userKey = do
-  owner <- insertEntity $ Owner userKey
-  return owner
-
 createAccount :: Email
               -> Text
               -> Text
               -> DB ( Entity User
                     , Entity EmailVerification
-                    , Entity Owner
                     , Entity Account
                     )
 createAccount email name pass = do
   (user, emailVerification) <- createUser email name pass
-  owner <- createOwner (entityKey user)
-  account <- insertEntity $ Account (entityKey owner)
-  return (user, emailVerification, owner, account)
+  account <- insertEntity $ Account (entityKey user)
+  return (user, emailVerification, account)
 
 --------------------------------------------------------------------------------
 -- Conferences
@@ -296,14 +288,14 @@ getConference confId = getRecByField ConferenceId confId
 -- they exist.
 getOwnerForConference
   :: ConferenceId
-  -> DB (Maybe (Entity Conference, Entity Owner))
+  -> DB (Maybe (Entity Conference, Entity Account, Entity User))
 getOwnerForConference confId =
   selectFirst $
-    from $ \(conference `InnerJoin` account `InnerJoin` owner) -> do
-      on (account ^. AccountOwner ==. owner ^. OwnerId)
+    from $ \(conference `InnerJoin` account `InnerJoin` user) -> do
+      on (account ^. AccountOwner ==. user ^. UserId)
       on (conference ^. ConferenceAccount ==. account ^. AccountId)
       where_ (conference ^. ConferenceId ==. (val confId))
-      pure (conference, owner)
+      pure (conference, account, user)
 
 -- | Return whether or not the user is an admin of the conference
 -- Warning: Does not check if user is the owner of the conference
@@ -592,3 +584,36 @@ getConfAndAbstractTypes confId = do
     (Just conf) -> do
       abstractTypes <- getAbstractTypes confId
       return $ Just $ (conf, abstractTypes)
+
+createRoleInvitation :: ConferenceId
+                     -> Email
+                     -> Role
+                     -> DB (Entity RoleInvitation)
+createRoleInvitation confId email role = do
+  uuid <- liftIO nextRandom
+  now <- liftIO getCurrentTime
+  insertEntity $
+      RoleInvitation email confId role uuid now Nothing Nothing
+
+--------------------------------------------------------------------------------
+-- Roles -----------------------------------------------------------------------
+--------------------------------------------------------------------------------
+rolesForConference :: ConferenceId
+                   -> DB ( [(Entity User, Entity Admin)]
+                         , [(Entity User, Entity Editor)]
+                         )
+rolesForConference confId = do
+  admins <- getRoleUsers AdminUser AdminConference
+  editors <- getRoleUsers EditorUser EditorConference
+  pure (admins, editors)
+  where getRoleUsers :: (DBVal val)
+                     => EntityField val UserId
+                     -> EntityField val ConferenceId
+                     -> DB [(Entity User, Entity val)]
+        getRoleUsers roleUserField roleConferenceField =
+          select $
+          from $ \(conference `InnerJoin` roleModel `InnerJoin` user) -> do
+            on (user ^. UserId ==. roleModel ^. roleUserField)
+            on (roleModel ^. roleConferenceField ==. conference ^. ConferenceId)
+            where_ (conference ^. ConferenceId ==. val confId)
+            pure (user, roleModel)

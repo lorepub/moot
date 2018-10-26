@@ -27,8 +27,8 @@ import qualified Settings as S
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User sql=users
-  email Email sqltype=varchar(100)
-  name Text sqltype=varchar(100)
+  email Email sqltype=varchar(320)
+  name Text sqltype=varchar(256)
   createdAt UTCTime
   verifiedAt UTCTime Maybe
   UniqueUserEmail email
@@ -53,13 +53,8 @@ Reset sql=resets
   deriving Eq Show
 
 Account sql=accounts
-  owner OwnerId
+  owner UserId
   UniqueAccountOwner owner
-  deriving Eq Show
-
-Owner sql=owners
-  user UserId
-  UniqueOwnerUser user
   deriving Eq Show
 
 Admin sql=admins
@@ -72,6 +67,17 @@ Editor sql=editors
   user UserId
   conference ConferenceId
   UniqueEditorUserConference user conference
+  deriving Eq Show
+
+RoleInvitation sql=role_invitations
+  email Email sqltype=varchar(320)
+  conference ConferenceId
+  role Role sqltype=varchar(100)
+  uuid UUID
+  createdAt UTCTime
+  verifiedAt UTCTime Maybe
+  user UserId Maybe
+  UniqueRoleInvitation email conference
   deriving Eq Show
 
 Conference sql=conferences

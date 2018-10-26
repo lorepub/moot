@@ -7,7 +7,6 @@ where
 import Yesod.Paginator.Prelude
 import Yesod.Core
 import Yesod.Paginator.Pages
-import Yesod.Persist.Core
 
 
 -- | Utility for better custom pagination allowing only one runDB.

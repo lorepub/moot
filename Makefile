@@ -56,7 +56,7 @@ ghcid:
 dev-deps:
 	stack install ghcid
 
-reset-database: destroy-create-db migration fixtures
+reset-database: create-db-user destroy-create-db migration fixtures
 
 reset-data: truncate-tables fixtures
 

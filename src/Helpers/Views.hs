@@ -7,6 +7,7 @@ baseLayout :: Maybe (Entity User)
            -> HandlerFor App Html
 baseLayout _ content = do
   nav <- renderNav
+  msgs <- getMessages
   defaultLayout $ do
     -- We need AJAX here and there.
     addScriptRemote "https://code.jquery.com/jquery-3.3.1.min.js"
@@ -15,6 +16,8 @@ baseLayout _ content = do
     addStylesheet (StaticR css_app_css)
     [whamlet|
 ^{nav}
+$forall (status, msg) <- msgs
+    <p class="message #{status}">#{msg}
 <br>
 ^{content}
 ^{renderFooter}
