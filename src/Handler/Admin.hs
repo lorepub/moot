@@ -89,7 +89,7 @@ renderConferenceAbstractTypes conf@(Entity conferenceId _)
 
 getConferenceAbstractTypesR :: ConferenceId -> Handler Html
 getConferenceAbstractTypesR conferenceId = do
-  (_, _, _, conference) <-
+  (_, _, conference) <-
     requireOwnerForConference conferenceId
   abstractTypes <- runDB $ getAbstractTypes (entityKey conference)
   (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
@@ -97,7 +97,7 @@ getConferenceAbstractTypesR conferenceId = do
 
 postConferenceAbstractTypesR :: ConferenceId -> Handler Html
 postConferenceAbstractTypesR conferenceId = do
-  (_, _, _, conference) <-
+  (_, _, conference) <-
     requireOwnerForConference conferenceId
   ((result, abstractTypeFormWidget), _) <- runFormPost abstractTypeForm
   case result of

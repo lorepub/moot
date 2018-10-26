@@ -19,6 +19,7 @@ getConferenceRolesR :: ConferenceId -> Handler Html
 getConferenceRolesR confId = do
   (_, confEnt@(Entity _ conference)) <- requireAdminForConference confId
   let confName = conferenceName conference
+  (admins, editors) <- runDB $ rolesForConference confId
   baseLayout Nothing $ do
     setTitle (fromString (unpack confName))
     [whamlet|
@@ -28,6 +29,15 @@ getConferenceRolesR confId = do
     <h5>
       <a href="@{ConferenceInviteRoleR confId}">
         Invite someone to be an editor on this conference
+    <h3>Users with roles on this conference
+      <h5>Admins
+        <ul>
+          $forall (Entity _ user, _) <- admins
+            <li>#{tshow user}
+      <h5>Editors
+        <ul>
+          $forall (Entity _ user, _) <- editors
+            <li>#{tshow user}
 |]
 
 data RoleInviteForm =

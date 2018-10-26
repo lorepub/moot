@@ -53,13 +53,8 @@ Reset sql=resets
   deriving Eq Show
 
 Account sql=accounts
-  owner OwnerId
+  owner UserId
   UniqueAccountOwner owner
-  deriving Eq Show
-
-Owner sql=owners
-  user UserId
-  UniqueOwnerUser user
   deriving Eq Show
 
 Admin sql=admins

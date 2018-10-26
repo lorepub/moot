@@ -2,7 +2,6 @@ module Helpers.Forms where
 
 import Import.NoFoundation
 
-import qualified Data.Text as T
 import qualified Text.Email.Validate as TEV
 
 named :: Text -> FieldSettings master -> FieldSettings master
