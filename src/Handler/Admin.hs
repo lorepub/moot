@@ -557,18 +557,18 @@ getConferenceCallForProposalsR confId = do
   let filters abstractType abstract user =
         genFilterConstraints cfpFilterF abstractType abstract user
       -- | unblocked abstracts only
-      getAbstractCnt = 
+      getAbstractCnt =
         fmap (fromIntegral . fromMaybe 0 . fmap unValue) . selectFirst $
            getAbstractsAndAuthorsForConferenceCnt filters False confId
       getAbstractPages offs =
         select $
           -- unblocked abstracts only
           getAbstractsAndAuthorsForConferencePage filters False confId (OffsetAndLimit offs pageSize)
-             
-  (itemsCnt, abstractPages) <- runDB $ PageUtil.paginateCustom pageSize 
+
+  (itemsCnt, abstractPages) <- runDB $ PageUtil.paginateCustom pageSize
                          getAbstractCnt
                          (\pn -> getAbstractPages . fromIntegral . PageUtil.pageOffset pn $ pageSize)
-  let abstractCnt = fromIntegral itemsCnt :: Integer                      
+  let abstractCnt = fromIntegral itemsCnt :: Integer
   let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
       pages = Page.simple pageSize abstractPages
@@ -773,16 +773,16 @@ postConferenceAbstractR confId abstractId = do
 
 -------------------------------------------------------
 -- Proof of concept slug versions
--- Note to do a good job these should have used withConferenceSlugRedirect2 and 
--- withConferenceSlugStrict2 an I should have changed existing rendering functions 
+-- Note to do a good job these should have used withConferenceSlugRedirect2 and
+-- withConferenceSlugStrict2 an I should have changed existing rendering functions
 -- (so they know ConferenceSlug for form submission route)
 -------------------------------------------------------
 getConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
-getConferenceAbstractPocR code abstractId = 
+getConferenceAbstractPocR code abstractId =
    withConferenceSlugRedirect (\c -> ConferenceAbstractPocR c abstractId) (flip getConferenceAbstractR abstractId) code
 
 postConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
-postConferenceAbstractPocR code abstractId = 
+postConferenceAbstractPocR code abstractId =
    withConferenceSlugStrict (flip postConferenceAbstractR abstractId) code
 
 getUserSearchR :: Text -> Handler A.Value
