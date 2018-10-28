@@ -323,6 +323,14 @@ getAbstractTypes :: ConferenceId -> DB [Entity AbstractType]
 getAbstractTypes conferenceId =
   getRecsByField AbstractTypeConference conferenceId
 
+getAbstractTypeByConferenceAndId :: ConferenceId -> AbstractTypeId -> DB (Maybe (Entity AbstractType))
+getAbstractTypeByConferenceAndId confId atId =
+  selectFirst $
+    from $ \(abstractType) -> do
+      where_ (abstractType ^. AbstractTypeConference ==. val confId)
+      where_ (abstractType ^. AbstractTypeId ==. val atId)
+      pure abstractType
+
 getAbstractsForConference :: ConferenceId
                           -> DB [(Entity Abstract, Entity AbstractType)]
 getAbstractsForConference conferenceId =
@@ -450,6 +458,14 @@ getAbstractsAndAuthorsForConference''' constraints blocked conferenceId offsetAn
                offset off
                limit lim
     pure (resultF abstract user abstractType)
+
+updateAbstractType :: AbstractTypeId -> Text -> Word64 -> DB ()
+updateAbstractType abstractTypeId name duration =
+  update $ \a -> do
+     set a [ AbstractTypeName =. val name
+           , AbstractTypeDuration =. val (makeTalkDuration duration)
+           ]
+     where_ (a ^. AbstractTypeId ==. val abstractTypeId)
 
 updateAbstract :: AbstractId -> Text -> Markdown -> DB ()
 updateAbstract abstractId title body = do

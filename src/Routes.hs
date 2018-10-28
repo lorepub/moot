@@ -28,6 +28,7 @@ mkYesodData "App" [parseRoutes|
 /conference/#ConferenceId/cfp/open                       ConferenceCfpOpenR POST
 /conference/#ConferenceId/cfp/close                      ConferenceCfpCloseR POST
 /conference/#ConferenceId/abstract-types                 ConferenceAbstractTypesR GET POST
+/conference/#ConferenceId/abstract-type/#AbstractTypeId  ConferenceAbstractTypeR GET POST
 /conference/#ConferenceId/cfp                            ConferenceCallForProposalsR GET
 /conference/#ConferenceId/cfp/blocklisted                ConferenceBlockedProposalsR GET
 /conference/#ConferenceId/abstract/#AbstractId           ConferenceAbstractR GET POST

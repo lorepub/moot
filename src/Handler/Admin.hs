@@ -49,14 +49,21 @@ data AbstractTypeForm =
   , abstractTypeFormDuration :: Word64
   } deriving Show
 
-abstractTypeForm :: Form AbstractTypeForm
-abstractTypeForm =
+mkAbstractTypeForm' :: AbstractType -> Form AbstractTypeForm
+mkAbstractTypeForm' at = mkAbstractTypeForm (Just $ abstractTypeName at) (Just $ (unpackTalkDuration . abstractTypeDuration) at)
+
+mkAbstractTypeForm :: Maybe Text -> Maybe Word64 -> Form AbstractTypeForm
+mkAbstractTypeForm atName atDuration =
   renderDivs $
         AbstractTypeForm
     <$> areq textField (named "talk-type-name"
-                        (placeheld "Talk type name: ")) Nothing
+                        (placeheld "Talk type name: "))
+        atName
     <*> areq intField (named "talk-duration"
-                        (placeheld "Talk type duration in minutes: ")) Nothing
+                        (placeheld "Talk type duration in minutes: "))
+        atDuration
+
+abstractTypeForm = mkAbstractTypeForm Nothing Nothing
 
 renderConferenceAbstractTypes ::
      Entity Conference
@@ -84,7 +91,28 @@ renderConferenceAbstractTypes conf@(Entity conferenceId _)
     $else
       <ul>
         $forall abstractType <- abstractTypes
-          <li>#{renderAbstractType (entityVal abstractType)}
+          <li>^{renderAbstractTypeEdit conferenceId abstractType}
+    |]
+
+renderConferenceAbstractType ::
+     Entity Conference
+  -> Entity AbstractType
+  -> Widget
+  -> Handler Html
+renderConferenceAbstractType conf@(Entity conferenceId _)
+  abstractType@(Entity abstractTypeId _) abstractTypeFormWidget = do
+  baseLayout Nothing $ do
+    setTitle "Conference Abstract Type"
+    [whamlet|
+<article .grid-container>
+  <div .medium-3 .cell>
+    ^{renderConferenceWidget conf}
+  <div .medium-3 .cell>
+    <h1> Edit abstract type
+    <div>
+      <form method="POST" action=@{ConferenceAbstractTypeR conferenceId abstractTypeId }>
+        ^{abstractTypeFormWidget}
+        <input .button type="submit" value="Create">
     |]
 
 getConferenceAbstractTypesR :: ConferenceId -> Handler Html
@@ -109,6 +137,45 @@ postConferenceAbstractTypesR conferenceId = do
         getAbstractTypes (entityKey conference)
       renderConferenceAbstractTypes conference abstractTypes abstractTypeFormWidget
     _ -> error "bluhhh"
+
+getConferenceAbstractTypeR :: ConferenceId -> AbstractTypeId -> Handler Html
+getConferenceAbstractTypeR conferenceId abstractTypeId = do
+  (_, _, _, conference) <-
+    requireOwnerForConference conferenceId
+  abstractType <- runDBOr404 $ getAbstractTypeByConferenceAndId conferenceId abstractTypeId
+  (abstractTypeFormWidget, _) <- generateFormPost (mkAbstractTypeForm' (entityVal abstractType))
+  renderConferenceAbstractType conference abstractType abstractTypeFormWidget
+
+postConferenceAbstractTypeR :: ConferenceId -> AbstractTypeId -> Handler Html
+postConferenceAbstractTypeR confId abstractTypeId = do
+  (_, Entity _ conference) <-
+    requireAdminForConference confId
+  abstractType <-
+    runDBOr404 $ get abstractTypeId
+  ((result, widget), enctype) <-
+    runFormPost
+      (mkAbstractTypeForm' abstractType)
+  case result of
+    FormSuccess (AbstractTypeForm name duration) -> do
+      runDB $ updateAbstractType abstractTypeId name duration
+      abstractTypes <- runDB $ getAbstractTypes confId
+      (abstractTypeFormWidget, _) <- generateFormPost abstractTypeForm
+      renderConferenceAbstractTypes
+        (Entity confId conference)
+        abstractTypes abstractTypeFormWidget
+    _ ->
+      renderConferenceAbstractType
+        (Entity confId conference)
+        (Entity abstractTypeId abstractType) widget
+
+renderAbstractTypeEdit :: ConferenceId -> Entity AbstractType -> Widget
+renderAbstractTypeEdit  confId (Entity atId (AbstractType _ name td)) =
+  [whamlet|
+    <label>
+      #{name} (#{renderTalkDuration td})
+    <a href=@{ConferenceAbstractTypeR confId atId}>
+      [Edit]
+  |]
 
 renderConferencesCallout :: [Entity Conference] -> Text -> Widget
 renderConferencesCallout [] _ = return ()
@@ -490,18 +557,18 @@ getConferenceCallForProposalsR confId = do
   let filters abstractType abstract user =
         genFilterConstraints cfpFilterF abstractType abstract user
       -- | unblocked abstracts only
-      getAbstractCnt = 
+      getAbstractCnt =
         fmap (fromIntegral . fromMaybe 0 . fmap unValue) . selectFirst $
            getAbstractsAndAuthorsForConferenceCnt filters False confId
       getAbstractPages offs =
         select $
           -- unblocked abstracts only
           getAbstractsAndAuthorsForConferencePage filters False confId (OffsetAndLimit offs pageSize)
-             
-  (itemsCnt, abstractPages) <- runDB $ PageUtil.paginateCustom pageSize 
+
+  (itemsCnt, abstractPages) <- runDB $ PageUtil.paginateCustom pageSize
                          getAbstractCnt
                          (\pn -> getAbstractPages . fromIntegral . PageUtil.pageOffset pn $ pageSize)
-  let abstractCnt = fromIntegral itemsCnt :: Integer                      
+  let abstractCnt = fromIntegral itemsCnt :: Integer
   let abstracts = Page.pageItems (Page.pagesCurrent abstractPages)
   let ct = encodeCellTable [] (colonnadeAbstracts confId) abstracts
       pages = Page.simple pageSize abstractPages
@@ -706,16 +773,16 @@ postConferenceAbstractR confId abstractId = do
 
 -------------------------------------------------------
 -- Proof of concept slug versions
--- Note to do a good job these should have used withConferenceSlugRedirect2 and 
--- withConferenceSlugStrict2 an I should have changed existing rendering functions 
+-- Note to do a good job these should have used withConferenceSlugRedirect2 and
+-- withConferenceSlugStrict2 an I should have changed existing rendering functions
 -- (so they know ConferenceSlug for form submission route)
 -------------------------------------------------------
 getConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
-getConferenceAbstractPocR code abstractId = 
+getConferenceAbstractPocR code abstractId =
    withConferenceSlugRedirect (\c -> ConferenceAbstractPocR c abstractId) (flip getConferenceAbstractR abstractId) code
 
 postConferenceAbstractPocR :: ConferenceSlug -> AbstractId -> Handler Html
-postConferenceAbstractPocR code abstractId = 
+postConferenceAbstractPocR code abstractId =
    withConferenceSlugStrict (flip postConferenceAbstractR abstractId) code
 
 getUserSearchR :: Text -> Handler A.Value
